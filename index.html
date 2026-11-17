@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mala 3D Fabrika</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@600;800&display=swap">
+<style>
+/* Layout: dve kolone (podešavanja levo, render desno); na telefonu render je prvi, pa podešavanja.
+   Tamna industrijska tema, žuta akcenat, Space Mono + Syne. */
+:root {
+  --bg: #0a0a0a; --surface: #121211; --surface2: #1a1a18; --line: #2b2b28; --grid: #1d1d1a;
+  --fg: #ecece4; --mute: #9a9a90; --accent: #eaff00; --accent-ink: #0a0a0a;
+  --ok: #5fd38d; --warn: #ffb020; --bad: #ff6a5f; --cut: #ff6a5f; --hole: #ff4d4d; --wire: #4da3ff;
+  --letter-o: #5b8fbf; --letter-c: #d9d6c6; --rib: #1fb67f; --base: #6e6d66;
+  --font-display: 'Syne', 'Arial Black', sans-serif; --font-mono: 'Space Mono', ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f1f0ec; --surface: #fbfaf7; --surface2: #ecebe5; --line: #cfcdc4; --grid: #e2e0d8;
+    --fg: #151512; --mute: #5f5f57; --accent: #d4550a; --accent-ink: #ffffff;
+    --ok: #1d7f4a; --warn: #a85f00; --bad: #c4301f; --cut: #c4301f; --hole: #d62828; --wire: #1d63c4;
+    --letter-o: #7aaedb; --letter-c: #f4f1e4; --rib: #12805a; --base: #a9a79c;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f1f0ec; --surface: #fbfaf7; --surface2: #ecebe5; --line: #cfcdc4; --grid: #e2e0d8;
+  --fg: #151512; --mute: #5f5f57; --accent: #d4550a; --accent-ink: #ffffff;
+  --ok: #1d7f4a; --warn: #a85f00; --bad: #c4301f; --cut: #c4301f; --hole: #d62828; --wire: #1d63c4;
+  --letter-o: #7aaedb; --letter-c: #f4f1e4; --rib: #12805a; --base: #a9a79c;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: auto; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-mono); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px; background-attachment: fixed;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.logo { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .02em; }
+.logo b { color: var(--accent); font-weight: 800; }
+header .sub { color: var(--mute); font-size: 12px; text-transform: uppercase; letter-spacing: .14em; }
+.cols { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); }
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step { padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.step:last-child { border-bottom: 0; }
+.step h2 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; display: flex; gap: 10px; align-items: center; }
+.step h2 i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--accent-ink); background: var(--accent); padding: 1px 7px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); min-width: 0; }
+input[type=text], input[type=number] {
+  background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 0; padding: 9px 10px;
+  font: inherit; min-width: 0; width: 100%;
+}
+input[type=text]#ime { font-family: var(--font-display); font-weight: 800; font-size: 28px; padding: 8px 12px; letter-spacing: .01em; }
+input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); }
+.seg button { background: transparent; color: var(--mute); border: 0; border-right: 1px solid var(--line); padding: 9px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+.hint { font-size: 12px; color: var(--mute); margin: 0; }
+.fonts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.fonts button { background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 8px 10px; text-align: left; cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 0; }
+.fonts button .n { font-weight: 700; font-size: 13px; }
+.fonts button .d { color: var(--mute); font-size: 11px; }
+.fonts button[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.sl .l { font-size: 12px; color: var(--mute); }
+.sl output { font-weight: 700; font-size: 13px; text-align: right; min-width: 64px; }
+.sl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 2px 0 6px; }
+details.adv { border: 1px solid var(--line); }
+details.adv summary { cursor: pointer; padding: 9px 10px; font-size: 12px; color: var(--mute); text-transform: uppercase; letter-spacing: .1em; }
+details.adv .grid { padding: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); }
+.view { display: flex; flex-direction: column; min-width: 0; position: sticky; top: env(safe-area-inset-top, 0px); }
+.tabs { display: flex; border-bottom: 1px solid var(--line); align-items: stretch; flex-wrap: wrap; }
+.tabs button { background: transparent; color: var(--mute); border: 0; border-right: 1px solid var(--line); padding: 10px 16px; font: inherit; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
+.tabs button[aria-selected=true] { color: var(--accent-ink); background: var(--accent); font-weight: 700; }
+.tabs .opts { margin-left: auto; display: flex; gap: 14px; align-items: center; padding: 0 12px; font-size: 12px; color: var(--mute); }
+.tabs .opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.stage { position: relative; height: min(62vh, 640px); min-height: 320px; overflow: hidden; }
+#v2d, #v3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#v3d { touch-action: none; }
+.badge { position: absolute; left: 10px; top: 10px; background: var(--surface); border: 1px solid var(--line); padding: 5px 10px; font-size: 12px; display: flex; gap: 8px; align-items: center; z-index: 2; }
+.badge .dot { width: 8px; height: 8px; background: var(--accent); }
+.badge.busy .dot { animation: pulse 0.9s steps(2) infinite; }
+@keyframes pulse { 50% { opacity: .15; } }
+.stage.dim svg, .stage.dim canvas { opacity: .45; }
+.err { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; background: var(--surface); border: 1px solid var(--bad); color: var(--bad); padding: 10px 12px; font-size: 13px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--mute); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 10px; height: 10px; display: inline-block; }
+.result { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.result h2 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.parts { width: 100%; border-collapse: collapse; font-size: 13px; }
+.parts th { text-align: left; color: var(--mute); font-weight: 400; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; padding: 4px 8px 6px 0; }
+.parts td { padding: 6px 8px 6px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.tw { overflow-x: auto; }
+.tag { display: inline-block; padding: 0 6px; font-size: 11px; border: 1px solid var(--line); color: var(--mute); }
+.tag.sock { color: var(--hole); border-color: var(--hole); }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.tag.warn { color: var(--warn); border-color: var(--warn); }
+.sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.sum div { border: 1px solid var(--line); padding: 8px 10px; display: flex; flex-direction: column; }
+.sum b { font-family: var(--font-display); font-size: 20px; font-weight: 800; }
+.sum span { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .08em; }
+.btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { background: var(--accent); color: var(--accent-ink); border: 0; padding: 12px 20px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: .08em; }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.note { font-size: 12px; color: var(--mute); }
+.note.warn { color: var(--warn); }
+.msg { min-height: 1.4em; font-size: 12px; color: var(--mute); }
+@media (max-width: 860px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .view { position: static; order: -1; }
+  .stage { height: 52vh; min-height: 280px; }
+  input[type=text]#ime { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .badge.busy .dot { animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo">MALA <b>3D</b> FABRIKA</div>
+    <div class="sub">Generator LED slova-lampi · STL za Bambu Lab</div>
+  </header>
+
+  <div class="cols">
+    <div class="panel steps">
+      <section class="step">
+        <h2><i>1</i> Ime ili slovo</h2>
+        <input type="text" id="ime" value="Irina" maxlength="24" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Ime ili slovo">
+        <div class="seg" id="nacin" role="group" aria-label="Način">
+          <button type="button" data-v="spojeno" aria-pressed="true">Spojeno rukopisno</button>
+          <button type="button" data-v="posebno" aria-pressed="false">Svako slovo posebno</button>
+        </div>
+        <p class="hint" id="nacin-hint">Slova se dodiruju kao u pisanom imenu. Jedna traka, jedna utičnica, delovi se lepe.</p>
+      </section>
+
+      <section class="step">
+        <h2><i>2</i> Font</h2>
+        <div class="fonts" id="fonts"></div>
+      </section>
+
+      <section class="step">
+        <h2><i>3</i> Štampa</h2>
+        <div class="seg" id="preset" role="group" aria-label="Varijanta">
+          <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
+          <button type="button" data-v="laka" aria-pressed="false">Laka i brza</button>
+        </div>
+        <p class="hint" id="preset-hint"></p>
+        <div id="sliders"></div>
+        <details class="adv">
+          <summary>Napredna podešavanja</summary>
+          <div class="grid" id="adv"></div>
+        </details>
+        <button type="button" class="btn ghost" id="reset">Vrati početne mere</button>
+      </section>
+    </div>
+
+    <div class="view">
+      <div class="panel">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab2d" aria-selected="true">2D pregled</button>
+          <button type="button" role="tab" id="tab3d" aria-selected="false">3D model</button>
+          <div class="opts" id="opts3d" hidden>
+            <label><input type="checkbox" id="o-dif" checked> Difuzor</label>
+            <label><input type="checkbox" id="o-pos" checked> Postolje</label>
+          </div>
+        </div>
+        <div class="stage" id="stage">
+          <div class="badge busy" id="badge"><span class="dot"></span><span id="badge-t">Učitavam generator…</span></div>
+          <svg id="v2d" role="img" aria-label="Pogled spreda" xmlns="http://www.w3.org/2000/svg"></svg>
+          <canvas id="v3d" hidden></canvas>
+          <div class="err" id="err" hidden></div>
+        </div>
+        <div class="legend" id="legend">
+          <span><i style="background:var(--letter-c)"></i> kanal za traku</span>
+          <span><i style="background:var(--letter-o)"></i> zid</span>
+          <span><i style="background:var(--rib)"></i> zubi difuzora</span>
+          <span><i style="background:var(--hole);border-radius:50%"></i> utičnica</span>
+          <span><i style="background:var(--wire);border-radius:50%"></i> izlaz žice</span>
+          <span><i style="border-left:2px dashed var(--cut)"></i> mesto spajanja</span>
+        </div>
+      </div>
+
+      <div class="panel result" id="result">
+        <h2>Rezultat</h2>
+        <div class="sum" id="sum"></div>
+        <div class="tw"><table class="parts" id="parts"></table></div>
+        <div id="notes"></div>
+        <div class="btnrow">
+          <button type="button" class="btn" id="dl" disabled>Preuzmi STL (ZIP)</button>
+          <span class="msg" id="dlmsg"></span>
+        </div>
+        <p class="note">Telo štampaj na leđima, otvorom nagore, bez podupirača. Difuzor spoljnom stranom na teksturisanu PEI ploču. Postolje ravno. Delove istog imena lepi po ravnoj ivici.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script type="module">
+import { DEFAULTS, LAGANO, stlBytes } from './lamp.js';
+
+const $ = (id) => document.getElementById(id);
+const FONTOVI = {
+  dancing: ['Dancing Script', 'rukopisni, slova se spajaju'],
+  pacifico: ['Pacifico', 'debeli rukopisni'],
+  lobster: ['Lobster', 'rukopisni, klasičan'],
+  comfortaa: ['Comfortaa', 'zaobljen, štampani'],
+  nunito: ['Nunito', 'zaobljen, debeo'],
+  baloo: ['Baloo 2', 'zaobljen, veseo'],
+  poppins: ['Poppins', 'geometrijski'],
+  montserrat: ['Montserrat', 'moderan, čist'],
+};
+const SLIDERI = [
+  { k: 'visina', l: 'Visina slova', u: 'mm', min: 60, max: 320, step: 5 },
+  { k: 'dubina', l: 'Dubina lampe', u: 'mm', min: 12, max: 30, step: 1 },
+  { k: 'zid_bocni', l: 'Bočni zid (deblji = manje svetla sa strane)', u: 'mm', min: 1.2, max: 4.8, step: 0.2 },
+  { k: 'rupa', l: 'Rupa za utičnicu, prečnik', u: 'mm', min: 8, max: 16, step: 0.5 },
+  { k: 'zub_razmak', l: 'Zubi difuzora: jedan na svakih (manje = više zuba)', u: 'mm', min: 15, max: 90, step: 5 },
+  { k: 'postolje_visina', l: 'Postolje: visina', u: 'mm', min: 10, max: 40, step: 1 },
+  { k: 'postolje_dubina', l: 'Postolje: dubina', u: 'mm', min: 30, max: 110, step: 5 },
+];
+const NAPREDNO = [
+  ['zid_zadnji', 'Zadnji zid (mm)'], ['difuzor', 'Debljina difuzora (mm)'], ['zazor', 'Zazor difuzora (mm)'],
+  ['podebljanje', 'Podebljanje kanala (mm)'], ['rupa_dodatak', 'Dodatak na rupu (mm)'], ['rupa_iznad', 'Dno glave iznad postolja (mm)'],
+  ['glava_r', 'Poluprečnik glave utičnice (mm)'], ['slobodan_r', 'Slobodan krug unutra (mm)'],
+  ['zub_duzina', 'Zub: dužina (mm)'], ['zub_sirina', 'Zub: ulazi u kanal (mm)'],
+  ['postolje_ivica', 'Postolje: zaobljenje (mm)'], ['tol', 'Zazor stope u postolju (mm)'],
+  ['min_ulaz', 'Najmanji ulaz u postolje (mm)'], ['razmak', 'Razmak slova (mm, minus = bliže)'],
+  ['most', 'Most do tačke slova (mm)'], ['max_deo', 'Najveći deo za štampu (mm)'],
+  ['zica_rupa', 'Rupa za žicu (mm)'], ['sto_max', 'Veličina stola (mm)'],
+];
+const KEY = 'nikvolt-slova-v1';
+
+const state = { tekst: 'Irina', mode: 'spojeno', font: 'dancing', params: { ...DEFAULTS, visina: 200 }, result: null };
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (s && s.params) { state.tekst = s.tekst || state.tekst; state.mode = s.mode || state.mode; state.font = FONTOVI[s.font] ? s.font : state.font; state.params = { ...DEFAULTS, ...s.params }; }
+} catch (e) { /* bez memorije, radi normalno */ }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ tekst: state.tekst, mode: state.mode, font: state.font, params: state.params })); } catch (e) {} }
+
+// ------------------------------------------------------------------ kontrole
+const fontsEl = $('fonts');
+for (const [k, [n, d]] of Object.entries(FONTOVI)) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.v = k; b.innerHTML = `<span class="n">${n}</span><span class="d">${d}</span>`;
+  b.addEventListener('click', () => { state.font = k; syncUI(); schedule(); });
+  fontsEl.appendChild(b);
+}
+const slidersEl = $('sliders');
+for (const s of SLIDERI) {
+  const w = document.createElement('div'); w.className = 'sl';
+  w.innerHTML = `<span class="l">${s.l}</span><output id="o-${s.k}"></output><input type="range" id="r-${s.k}" min="${s.min}" max="${s.max}" step="${s.step}" aria-label="${s.l}">`;
+  slidersEl.appendChild(w);
+  const r = w.querySelector('input'), o = w.querySelector('output');
+  r.addEventListener('input', () => { state.params[s.k] = +r.value; o.textContent = (+r.value) + ' ' + s.u; syncPreset(); });
+  r.addEventListener('change', () => { schedule(); });
+}
+const advEl = $('adv');
+for (const [k, l] of NAPREDNO) {
+  const w = document.createElement('label'); w.className = 'f';
+  w.innerHTML = `<span>${l}</span><input type="number" id="n-${k}" step="any">`;
+  advEl.appendChild(w);
+  w.querySelector('input').addEventListener('change', (e) => {
+    const v = parseFloat(String(e.target.value).replace(',', '.'));
+    if (Number.isFinite(v)) { state.params[k] = v; schedule(); } else e.target.value = state.params[k];
+  });
+}
+function presetOf() {
+  const same = (P) => Object.keys(P).every((k) => Math.abs(state.params[k] - P[k]) < 1e-9);
+  const jaka = { zid_bocni: DEFAULTS.zid_bocni, dubina: DEFAULTS.dubina, postolje_visina: DEFAULTS.postolje_visina, postolje_dubina: DEFAULTS.postolje_dubina, postolje_ivica: DEFAULTS.postolje_ivica };
+  return same(jaka) ? 'jaka' : same(LAGANO) ? 'laka' : null;
+}
+function syncPreset() {
+  const p = presetOf();
+  document.querySelectorAll('#preset button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === p)));
+  $('preset-hint').textContent = p === 'laka' ? 'Zid 2,0 mm, dubina 18, postolje 16 × 50. Telo štampaj crnim ili tamnim PLA, da ne sija sa strane.'
+    : p === 'jaka' ? 'Zid 3,6 mm, dubina 20, postolje 25 × 85. Za beli PLA, bez svetla sa strane.' : 'Prilagođene mere.';
+}
+function syncUI() {
+  $('ime').value = state.tekst;
+  const multi = [...state.tekst.replace(/\s/g, '')].length > 1;
+  document.querySelectorAll('#nacin button').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.v === state.mode)); b.disabled = !multi; });
+  $('nacin-hint').textContent = !multi ? 'Jedno slovo: dobijaš telo, difuzor i postolje.'
+    : state.mode === 'spojeno' ? 'Slova se dodiruju kao u pisanom imenu. Jedna traka, jedna utičnica, delovi se lepe.'
+    : 'Svako slovo je zasebna lampa sa svojom utičnicom i postoljem.';
+  fontsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === state.font)));
+  for (const s of SLIDERI) { $('r-' + s.k).value = state.params[s.k]; $('o-' + s.k).textContent = state.params[s.k] + ' ' + s.u; }
+  for (const [k] of NAPREDNO) $('n-' + k).value = state.params[k];
+  syncPreset();
+}
+document.querySelectorAll('#preset button').forEach((b) => b.addEventListener('click', () => {
+  Object.assign(state.params, b.dataset.v === 'laka' ? LAGANO : { zid_bocni: DEFAULTS.zid_bocni, dubina: DEFAULTS.dubina, postolje_visina: DEFAULTS.postolje_visina, postolje_dubina: DEFAULTS.postolje_dubina, postolje_ivica: DEFAULTS.postolje_ivica });
+  syncUI(); schedule();
+}));
+document.querySelectorAll('#nacin button').forEach((b) => b.addEventListener('click', () => { state.mode = b.dataset.v; syncUI(); schedule(); }));
+$('ime').addEventListener('input', (e) => { state.tekst = e.target.value; syncUI(); schedule(); });
+$('reset').addEventListener('click', () => { state.params = { ...DEFAULTS, visina: state.params.visina }; syncUI(); schedule(); });
+
+// ------------------------------------------------------------------ računanje (worker, uz rezervu u glavnoj niti)
+let worker = null, host = null, reqId = 0, waiters = new Map(), workerOK = null;
+function initWorker() {
+  try {
+    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = (e) => {
+      const d = e.data;
+      if (d.ready) { workerOK = true; return; }
+      if (d.fatal) { failWorker(d.fatal); return; }
+      const w = waiters.get(d.id); if (!w) return; waiters.delete(d.id);
+      d.ok ? w.res(d.res) : w.rej(Object.assign(new Error(d.msg), { nep: d.nep }));
+    };
+    worker.onerror = (e) => failWorker(e.message || 'worker');
+  } catch (e) { failWorker(String(e)); }
+  setTimeout(() => { if (workerOK === null) { console.warn('worker timeout'); failWorker('timeout'); } }, 8000);
+}
+function failWorker() {
+  if (workerOK === false) return; workerOK = false;
+  if (worker) { try { worker.terminate(); } catch (e) {} worker = null; }
+  for (const [, w] of waiters) w.rej(Object.assign(new Error('retry'), { retry: true }));
+  waiters.clear();
+}
+async function compute(payload) {
+  if (worker && workerOK !== false) {
+    try {
+      return await new Promise((res, rej) => { const id = ++reqId; waiters.set(id, { res, rej }); worker.postMessage({ id, ...payload }); });
+    } catch (e) { if (!e.retry) throw e; }
+  }
+  if (!host) {
+    try { const m = await import('./host.js'); host = m.createHost(); }
+    catch (e) { throw new Error('Ne mogu da učitam generator (' + (e && e.message || e) + '). Okruženje blokira module/WASM.'); }
+  }
+  return await Promise.race([host.run(payload), new Promise((_, rej) => setTimeout(() => rej(new Error('Generator se ne pokreće (WASM/font nije učitan u ovom prikazu).')), 30000))]);
+}
+initWorker();
+
+let tm = null, busy = false, again = false, version = 0;
+function schedule() {
+  save();
+  clearTimeout(tm);
+  badge('Čekam izmene…', true);
+  tm = setTimeout(run, 650);
+}
+function badge(t, b) { $('badge-t').textContent = t; $('badge').classList.toggle('busy', !!b); }
+function showErr(msg) { const e = $('err'); e.hidden = !msg; e.textContent = msg || ''; }
+async function run() {
+  if (busy) { again = true; return; }
+  const tekst = state.tekst.trim();
+  if (!tekst) { showErr('Upiši slovo ili ime.'); badge('Spremno', false); return; }
+  busy = true; again = false; showErr('');
+  $('stage').classList.add('dim'); badge('Računam…', true); $('dl').disabled = true;
+  const my = ++version;
+  try {
+    const res = await compute({ tekst, mode: state.mode, font: state.font, params: { ...state.params } });
+    if (again || my !== version) { busy = false; again = false; return run(); }
+    state.result = { res, tekst, mode: state.mode, font: state.font };
+    show();
+    badge('Spremno', false);
+  } catch (e) {
+    if (again) { busy = false; again = false; return run(); }
+    showErr(e.nep ? e.message : 'Greška pri izradi: ' + e.message);
+    badge('Nije moguće', false);
+  }
+  busy = false;
+  $('stage').classList.remove('dim');
+}
+
+// ------------------------------------------------------------------ prikaz
+const fmt = (x) => (Math.round(x * 10) / 10).toString().replace('.', ',');
+function layout(res) {
+  const gap = 30; let x = 0; const off = [];
+  for (const r of res) { off.push(x - r.XL); x += (r.XR - r.XL) + 2 * r.a.postolje_ivica + gap; }
+  return off;
+}
+const pathOf = (polys) => polys.map((p) => 'M' + p.map((q) => q[0].toFixed(2) + ' ' + q[1].toFixed(2)).join('L') + 'Z').join('');
+function draw2d() {
+  const R = state.result; if (!R) return;
+  const off = layout(R.res);
+  let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+  R.res.forEach((r, i) => {
+    minX = Math.min(minX, r.XL + off[i] - r.a.postolje_ivica); maxX = Math.max(maxX, r.XR + off[i] + r.a.postolje_ivica);
+    for (const poly of r.O) for (const q of poly) { minX = Math.min(minX, q[0] + off[i]); maxX = Math.max(maxX, q[0] + off[i]); maxY = Math.max(maxY, q[1]); }
+    minY = Math.min(minY, r.T - r.baseH);
+  });
+  maxY += 14;
+  const pad = 14, w = maxX - minX + 2 * pad, h = maxY - minY + 2 * pad;
+  const svg = $('v2d');
+  svg.setAttribute('viewBox', `${minX - pad} ${-(maxY + pad)} ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  let s = '<g transform="scale(1,-1)">';
+  R.res.forEach((r, i) => {
+    const dx = off[i], iv = r.a.postolje_ivica;
+    s += `<g transform="translate(${dx.toFixed(2)} 0)">`;
+    s += `<rect x="${(r.XL - iv).toFixed(2)}" y="${(r.T - r.baseH).toFixed(2)}" width="${(r.XR - r.XL + 2 * iv).toFixed(2)}" height="${r.baseH.toFixed(2)}" rx="${Math.min(iv, 6)}" fill="var(--base)" opacity=".38" stroke="var(--base)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    for (let j = 0; j + 1 < r.delovi.length; j++) {
+      const mx = (r.delovi[j].xr + r.delovi[j + 1].xl) / 2;
+      s += `<line x1="${mx.toFixed(2)}" x2="${mx.toFixed(2)}" y1="${(r.T - r.baseH).toFixed(2)}" y2="${r.T.toFixed(2)}" stroke="var(--base)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    }
+    for (const d of r.delovi) {
+      s += `<path d="${pathOf(d.O)}" fill="var(--letter-o)" fill-rule="evenodd" stroke="var(--fg)" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+      s += `<path d="${pathOf(d.C)}" fill="var(--letter-c)" fill-rule="evenodd"/>`;
+      if (d.zubi.length) s += `<path d="${pathOf(d.zubi)}" fill="var(--rib)" fill-rule="evenodd"/>`;
+      if (d.rupa) {
+        s += `<circle cx="${d.rupa[0].toFixed(2)}" cy="${d.rupa[1].toFixed(2)}" r="${((r.a.rupa + r.a.rupa_dodatak) / 2).toFixed(2)}" fill="var(--hole)"/>`;
+        s += `<circle cx="${d.rupa[0].toFixed(2)}" cy="${d.rupa[1].toFixed(2)}" r="${r.a.glava_r}" fill="none" stroke="var(--hole)" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+      }
+      if (d.zica) s += `<circle cx="${d.zica[0].toFixed(2)}" cy="${d.zica[1].toFixed(2)}" r="${(r.a.zica_rupa / 2).toFixed(2)}" fill="var(--wire)"/>`;
+      if (d.rez_l) s += `<line x1="${d.xa.toFixed(2)}" x2="${d.xa.toFixed(2)}" y1="${(r.T - r.baseH - 4).toFixed(2)}" y2="${(r.a.visina + 6).toFixed(2)}" stroke="var(--cut)" stroke-dasharray="5 4" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
+    }
+    s += '</g>';
+  });
+  s += '</g>';
+  // oznake delova (van scale(1,-1) da tekst ne bude obrnut)
+  R.res.forEach((r, i) => {
+    for (const d of r.delovi) {
+      const x = (d.xl + d.xr) / 2 + off[i];
+      s += `<text x="${x.toFixed(2)}" y="${(-(r.a.visina + 8)).toFixed(2)}" text-anchor="middle" font-size="${Math.max(5, (maxX - minX) / 55).toFixed(2)}" fill="var(--mute)" font-family="Space Mono, monospace">deo ${d.br}${R.res.length > 1 && R.mode === 'posebno' ? ' · ' + r.tekst : ''}</text>`;
+    }
+  });
+  svg.innerHTML = s;
+}
+
+// ---- 3D
+let three = null;
+function init3d() {
+  if (three || typeof THREE === 'undefined' || !THREE.OrbitControls) return;
+  const canvas = $('v3d');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 1, 6000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = false;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(-200, 400, 600); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.35); dl2.position.set(300, -100, -300); scene.add(dl2);
+  const group = new THREE.Group(); scene.add(group);
+  const draw = () => renderer.render(scene, camera);
+  controls.addEventListener('change', draw);
+  const resize = () => {
+    const st = $('stage'); const w = st.clientWidth, h = st.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw();
+  };
+  new ResizeObserver(resize).observe($('stage'));
+  three = { renderer, scene, camera, controls, group, draw, resize, fitted: false };
+}
+const TINTS = [0x8ec5f0, 0xf4a7c3, 0x8ec5f0, 0xf4a7c3];
+function toGeo(m) {
+  const n = m.v.length / m.np, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[3 * i] = m.v[i * m.np]; pos[3 * i + 1] = m.v[i * m.np + 1]; pos[3 * i + 2] = m.v[i * m.np + 2]; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setIndex(new THREE.BufferAttribute(m.t, 1));
+  const g2 = g.toNonIndexed(); g.dispose(); g2.computeVertexNormals();
+  return g2;
+}
+function build3d() {
+  init3d(); if (!three || !state.result) return;
+  const { group } = three;
+  while (group.children.length) { const c = group.children.pop(); c.geometry && c.geometry.dispose(); }
+  const off = layout(state.result.res);
+  const mTelo = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ color: TINTS[i], roughness: 0.55, metalness: 0.05 }));
+  const mDif = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, transparent: true, opacity: 0.35, depthWrite: false });
+  const mPos = new THREE.MeshStandardMaterial({ color: 0x77766e, roughness: 0.7 });
+  const box = new THREE.Box3();
+  state.result.res.forEach((r, ri) => {
+    r.delovi.forEach((d, di) => {
+      const t = new THREE.Mesh(toGeo(d.r_telo), mTelo[(di + ri) % 4]); t.position.x = off[ri]; t.userData.kind = 'telo';
+      const f = new THREE.Mesh(toGeo(d.r_dif), mDif); f.position.x = off[ri]; f.userData.kind = 'dif'; f.renderOrder = 2;
+      const p = new THREE.Mesh(toGeo(d.r_pos), mPos); p.position.x = off[ri]; p.userData.kind = 'pos';
+      group.add(t, f, p);
+      box.expandByObject(t); box.expandByObject(p);
+    });
+  });
+  applyOpts();
+  const c = new THREE.Vector3(), sz = new THREE.Vector3(); box.getCenter(c); box.getSize(sz);
+  three.resize();
+  if (!three.fitted) {
+    const vf = THREE.MathUtils.degToRad(35) / 2, asp = three.camera.aspect || 1;
+    const dist = Math.max((sz.y / 2) / Math.tan(vf), (sz.x / 2) / (Math.tan(vf) * asp)) * 1.12 + sz.z / 2;
+    three.camera.position.set(c.x - sz.x * 0.22, c.y + sz.y * 0.42, c.z + dist * 0.95);
+    three.controls.target.copy(c);
+    three.fitted = true;
+  } else {
+    three.controls.target.copy(c);
+  }
+  three.controls.update(); three.resize(); three.draw();
+}
+function applyOpts() {
+  if (!three) return;
+  for (const o of three.group.children) {
+    if (o.userData.kind === 'dif') o.visible = $('o-dif').checked;
+    if (o.userData.kind === 'pos') o.visible = $('o-pos').checked;
+  }
+  three.draw();
+}
+$('o-dif').addEventListener('change', applyOpts); $('o-pos').addEventListener('change', applyOpts);
+function setTab(t) {
+  const is3 = t === '3d';
+  $('tab2d').setAttribute('aria-selected', String(!is3)); $('tab3d').setAttribute('aria-selected', String(is3));
+  $('v2d').toggleAttribute('hidden', is3); $('v3d').toggleAttribute('hidden', !is3); $('opts3d').toggleAttribute('hidden', !is3);
+  if (is3) { build3d(); requestAnimationFrame(() => three && three.resize()); }
+}
+$('tab2d').addEventListener('click', () => setTab('2d'));
+$('tab3d').addEventListener('click', () => setTab('3d'));
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { draw2d(); });
+
+function show() {
+  const R = state.result;
+  draw2d();
+  if (!$('v3d').hasAttribute('hidden')) build3d();
+  // rezultat
+  let parts = 0, solid = { t: 0, d: 0, p: 0 }, worstWidth = 0;
+  const rows = [], notes = [];
+  R.res.forEach((r, ri) => {
+    r.delovi.forEach((d) => {
+      parts++;
+      solid.t += d.vol.telo; solid.d += d.vol.difuzor; solid.p += d.vol.postolje;
+      const a = r.a;
+      const big = Math.max(d.bbox_telo[0], d.bbox_telo[1], d.bbox_pos[0], d.bbox_pos[1]) > a.sto_max;
+      if (big) notes.push(`Deo ${d.br}${R.mode === 'posebno' ? ' (' + r.tekst + ')' : ''} je veći od stola od ${a.sto_max} mm. Smanji visinu ili stavi manji najveći deo.`);
+      const bad = Object.entries(d.pr).some(([k, v]) => k !== 'razmak_glave' && v > 1e-3);
+      if (bad) notes.push(`Deo ${d.br}: delovi se preklapaju, proveri pregled pre štampe.`);
+      rows.push(`<tr><td>${R.mode === 'posebno' ? ri + 1 + '.' : ''}${d.br}</td><td><b>${d.slova || '-'}</b></td>
+        <td>${fmt(d.bbox_telo[0])} × ${fmt(d.bbox_telo[1])} mm</td><td>${fmt(d.bbox_pos[0])} × ${fmt(d.bbox_pos[1])} × ${fmt(d.bbox_pos[2])} mm</td>
+        <td>${d.rupa ? '<span class="tag sock">utičnica</span> ' : ''}${d.zica ? '<span class="tag">žica</span> ' : ''}${big ? '<span class="tag warn">veliko</span>' : '<span class="tag ok">staje</span>'}</td></tr>`);
+    });
+    if (r.podeb > r.a.podebljanje) notes.push(`Kanal je podebljan na ${fmt(r.podeb)} mm da bi utičnica stala.`);
+    if (r.mostovi) notes.push(`Delovi koji ne stoje sami (tačka na i, veliko slovo uz malo) spojeni su uskim mostom.`);
+    worstWidth = Math.max(worstWidth, r.XR - r.XL);
+  });
+  const rho = 1.24 / 1000;   // g/mm3, PLA
+  const gr = (solid.t * 0.85 + solid.d + solid.p * 0.1) * rho;
+  const first = R.res[0];
+  $('sum').innerHTML = `
+    <div><b>${parts}</b><span>${parts === 1 ? 'deo' : 'dela'} za štampu</span></div>
+    <div><b>${R.mode === 'spojeno' ? fmt(first.XR - first.XL) : fmt(worstWidth)} mm</b><span>${R.mode === 'spojeno' ? 'širina imena' : 'najšire slovo'}</span></div>
+    <div><b>≈ ${Math.round(gr / 10) * 10} g</b><span>procena mase (postolje 10% ispune)</span></div>
+    <div><b>${first.T !== undefined ? fmt(first.baseH) : ''} mm</b><span>visina postolja</span></div>`;
+  $('parts').innerHTML = `<thead><tr><th>Deo</th><th>Slova</th><th>Telo</th><th>Postolje</th><th></th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  $('notes').innerHTML = notes.map((n) => `<p class="note warn">${n}</p>`).join('');
+  $('dl').disabled = false;
+}
+
+// ------------------------------------------------------------------ preuzimanje
+function safe(t) {
+  return t.replace(/Đ/g, 'Dj').replace(/đ/g, 'dj').normalize('NFKD').replace(/[^\x00-\x7f]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_') || 'x';
+}
+function info(R) {
+  const L = [`Mala 3D fabrika, slova: ${R.tekst}, font ${FONTOVI[R.font][0]}, ${R.mode === 'spojeno' ? 'spojeno ime' : 'svako slovo posebno'}`];
+  R.res.forEach((r) => {
+    const a = r.a;
+    L.push('', `Slovo/ime ${r.tekst}: visina ${a.visina} mm, dubina ${a.dubina}, bočni zid ${a.zid_bocni}, zadnji zid ${a.zid_zadnji}, difuzor ${a.difuzor}, zazor ${a.zazor}, rupa Ø${a.rupa + a.rupa_dodatak}`);
+    r.delovi.forEach((d) => L.push(`  deo ${d.br} (${d.slova}): telo ${d.bbox_telo.slice(0, 2).map((x) => x.toFixed(0)).join(' x ')} mm, postolje ${d.bbox_pos.map((x) => x.toFixed(0)).join(' x ')} mm, zubi ${d.broj_zuba}${d.rupa ? ', UTIČNICA' : ''}${d.zica ? ', izlaz žice' : ''}`));
+  });
+  L.push('', 'Štampa: telo na leđima otvorom nagore (bez podupirača), difuzor spoljnom stranom na teksturisanu PEI ploču, postolje ravno.',
+    'Delovi istog imena se lepe po ravnoj ivici; kanal je neprekinut, jedna traka ide kroz spoj.');
+  return L.join('\n');
+}
+$('dl').addEventListener('click', async () => {
+  const R = state.result; if (!R) return;
+  const msg = $('dlmsg'); msg.textContent = 'Pakujem…'; $('dl').disabled = true;
+  try {
+    const dlc = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
+    const zip = new JSZip();
+    const root = `${safe(R.tekst)}_${R.font}`;
+    const multi = R.res.length > 1;
+    R.res.forEach((r, ri) => {
+      const base = multi ? `${root}/${ri + 1}_${safe(r.tekst)}` : root;
+      r.delovi.forEach((d) => {
+        const folder = `${base}/deo${d.br}_${safe(d.slova)}`;
+        const osn = `${safe(R.tekst)}_${R.font}${multi ? '_' + safe(r.tekst) : ''}_deo${d.br}`;
+        zip.file(`${folder}/${osn}_telo.stl`, stlBytes(d.telo));
+        zip.file(`${folder}/${osn}_difuzor.stl`, stlBytes(d.difuzor));
+        zip.file(`${folder}/${osn}_postolje.stl`, stlBytes(d.postolje));
+      });
+    });
+    zip.file(`${root}/info.txt`, info(R));
+    const data = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    if (dlc) await dlc.save({ filename: `${root}.zip`, data });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/zip' })); a.download = `${root}.zip`; document.body.appendChild(a); a.click(); a.remove(); }
+    msg.textContent = 'Sačuvano.';
+  } catch (e) {
+    msg.textContent = e && e.code === 'declined' ? 'Preuzimanje otkazano.' : 'Preuzimanje nije uspelo' + (e && e.message ? ': ' + e.message : '.');
+  }
+  $('dl').disabled = false;
+});
+
+syncUI();
+badge('Učitavam generator…', true);
+run();
+</script>
+
+</body>
+</html>
