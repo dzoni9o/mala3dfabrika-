@@ -25,26 +25,11 @@
           <label class="num"><span>Dubina</span><span class="in"><input type="number" id="D" inputmode="decimal" step="any"><span class="u">mm</span></span></label>
           <label class="num"><span>Visina</span><span class="in"><input type="number" id="H" inputmode="decimal" step="any"><span class="u">mm</span></span></label>
         </div>
-        <p class="hint">Unutrašnja mera fioke ili police. Kutijice popunjavaju širinu i dubinu, a visina je najveća dozvoljena. Napred je dno plana.</p>
-        <div class="row2 c2">
-          <label class="num"><span>Brza mreža: kolone</span><input type="number" id="g-c" value="3" min="1" max="12" inputmode="numeric"></label>
-          <label class="num"><span>redovi</span><input type="number" id="g-r" value="2" min="1" max="12" inputmode="numeric"></label>
-        </div>
-        <button type="button" class="mini" id="grid">Postavi jednaku mrežu (zamenjuje raspored)</button>
-      </section>
+        <p class="hint">Unutrašnja mera fioke ili police. Sve ostalo podešavaš direktno na planu: vuci ivice, klikni kutijicu, klikni mere.</p>
+</section>
 
       <section class="step">
-        <h2><i>2</i> Kutijice</h2>
-        <div class="boxlist" id="boxlist"></div>
-        <div class="btnrow">
-          <button type="button" class="mini" id="add-row">+ red</button>
-          <button type="button" class="mini" id="add-box">+ kutijica u red</button>
-        </div>
-        <div id="editor"></div>
-      </section>
-
-      <section class="step">
-        <h2><i>3</i> Štampa</h2>
+        <h2><i>2</i> Štampa</h2>
         <div class="seg" id="preset" role="group" aria-label="Varijanta">
           <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
           <button type="button" data-v="lagana" aria-pressed="false">Laka i brza</button>
@@ -73,12 +58,25 @@
             <span class="slider">Razmak <input type="range" id="o-exp" min="0" max="60" value="0"></span>
           </div>
         </div>
+        <div class="planwrap" id="planwrap">
         <div class="stage" id="stage">
+          <div class="ptools" id="ptools">
+            <button type="button" class="mini" id="add-row">+ red</button>
+            <button type="button" class="mini" id="add-box">+ kutijica</button>
+            <button type="button" class="mini" id="grid-toggle">Mreža</button>
+            <span class="gridform" id="gridform" hidden>
+              <input type="number" id="g-c" value="3" min="1" max="12" inputmode="numeric" aria-label="kolone"> ×
+              <input type="number" id="g-r" value="2" min="1" max="12" inputmode="numeric" aria-label="redovi">
+              <button type="button" class="mini" id="grid">OK</button>
+            </span>
+          </div>
           <div class="badge busy" id="badge"><span class="dot"></span><span id="badge-t">Učitavam…</span></div>
           <svg id="v2d" role="img" aria-label="Raspored odozgo" xmlns="http://www.w3.org/2000/svg"></svg>
           <canvas id="v3d" hidden></canvas>
           <div class="tip" id="tip" hidden></div>
           <div class="err" id="err" hidden></div>
+        </div>
+        <aside class="pop" id="pop"><div class="pop-h"><span>Izabrana kutijica</span><button type="button" class="mini" id="pop-x" aria-label="sakrij">–</button></div><div id="editor"></div></aside>
         </div>
         <div class="legend">
           <span class="tipline">⇔ uhvati ivicu između kutijica i prevuci (Shift = fino, dvoklik = auto)</span>

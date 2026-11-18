@@ -162,3 +162,37 @@ header .back { margin-left: auto; color: var(--mute); font-size: 12px; text-deco
 .step { transition: background .12s; }
 .editor { box-shadow: 0 0 0 1px rgba(234,255,0,.15), 0 8px 24px rgba(0,0,0,.35); }
 @media (max-width: 860px) { .stp { width: 38px; } #v2d .edge .hit { stroke-width: 34px; } }
+
+/* ---- sve na planu ---- */
+.planwrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
+.planwrap.only3d { grid-template-columns: minmax(0, 1fr); }
+.pop { border-left: 1px solid var(--line); background: var(--surface); max-height: min(62vh, 640px); overflow: auto; }
+.pop[hidden] { display: none !important; }
+.pop-h { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--mute); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.pop.min #editor { display: none; }
+.pop .editor { border: 0; box-shadow: none; padding: 10px; gap: 10px; }
+.pop .row2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pop .editor h3 { font-size: 12px; }
+.ptools { position: absolute; left: 10px; top: 46px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ptools .mini { background: var(--surface); }
+.gridform { display: inline-flex; gap: 4px; align-items: center; background: var(--surface); border: 1px solid var(--line); padding: 2px 4px; }
+.gridform input { width: 46px; padding: 5px; text-align: center; }
+#v2d .dimlbl { cursor: text; }
+#v2d .dimlbl:hover { fill: var(--accent); text-decoration: underline; }
+#v2d .edge.es .hit { cursor: nwse-resize; touch-action: none; }
+#v2d .edge.es .grip { stroke-dasharray: 6 4; }
+.inl { position: absolute; z-index: 4; width: 90px; background: var(--bg); color: var(--accent); border: 2px solid var(--accent); padding: 4px 6px; font: inherit; font-weight: 700; }
+@media (max-width: 860px) {
+  .planwrap { grid-template-columns: minmax(0, 1fr); }
+  .pop { border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+  .ptools { top: 44px; }
+}
+
+.pop .row2 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pop .num .u { display: none; }
+.pop .num { font-size: 11px; }
+.pop .stp { width: 24px; }
+.pop .num input { padding: 7px 4px; }
+.pop .fixed-tag, .pop .num .hint { font-size: 10px; }
+.pop .chk { font-size: 12px; }
+@media (min-width: 861px) { .stage { height: min(66vh, 680px); } .pop { max-height: min(66vh, 680px); } }

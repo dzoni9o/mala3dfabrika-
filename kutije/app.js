@@ -36,7 +36,9 @@ for (const k of ['zid', 'dno', 'pregrada', 'poklopac', 'usna', 'tol']) {
   $('p-' + k).addEventListener('input', (e) => { const v = num(e.target.value); if (v != null && v > 0) go({ act: 'print', k, v }, { keepEditor: true }); });
 }
 document.querySelectorAll('#preset button').forEach((b) => b.addEventListener('click', () => go({ act: 'preset', v: b.dataset.v })));
-$('grid').addEventListener('click', () => go({ act: 'grid', cols: num($('g-c').value) || 1, rows: num($('g-r').value) || 1 }));
+$('grid').addEventListener('click', () => { $('gridform').hidden = true; go({ act: 'grid', cols: num($('g-c').value) || 1, rows: num($('g-r').value) || 1 }); });
+$('grid-toggle').addEventListener('click', () => { $('gridform').hidden = !$('gridform').hidden; });
+$('pop-x').addEventListener('click', () => { const c = $('pop').classList.toggle('min'); $('pop-x').textContent = c ? '+' : '–'; });
 $('add-row').addEventListener('click', () => go({ act: 'addRow' }));
 $('add-box').addEventListener('click', () => { const f = findBox(S, sel); go({ act: 'addBox', rowId: (f.row || S.rows[S.rows.length - 1]).id }); const r = (f.row || S.rows[S.rows.length - 1]); sel = r.boxes[r.boxes.length - 1].id; renderAll(); });
 $('reset').addEventListener('click', () => { if (!confirm('Vratiti početno stanje? Raspored i podešavanja se brišu.')) return; S = pocetnoStanje(); RES = normalize(S); sel = S.rows[0].boxes[0].id; save(); renderAll(); schedule(); });
@@ -54,6 +56,7 @@ function syncSpace() {
 
 // ------------------------------------------------------------------ lista kutijica i editor
 function renderList() {
+  if (!$('boxlist')) return;
   let h = '';
   S.rows.forEach((row, ri) => {
     h += `<span class="rowtag">Red ${ri + 1}${ri === S.rows.length - 1 ? ' (prednji)' : ''} · ${fmt(RES.rows[ri].d)} mm</span>`;
@@ -64,7 +67,7 @@ function renderList() {
   });
   $('boxlist').innerHTML = h;
 }
-$('boxlist').addEventListener('click', (e) => { const b = e.target.closest('button[data-id]'); if (b) { sel = b.dataset.id; renderAll(); } });
+
 
 const STEP = '<button type="button" class="stp" data-d="-1" tabindex="-1" aria-label="manje">−</button><button type="button" class="stp" data-d="1" tabindex="-1" aria-label="više">+</button>';
 function field(k, label, unit, extra = '') {
@@ -88,10 +91,11 @@ function buildEditor() {
     <h3 id="ed-title"></h3>
     <div class="row2">${field('w', 'Širina', 'mm')}${field('d', 'Dubina', 'mm')}${field('h', 'Visina', 'mm')}</div>
     <div class="row2">
-      <label class="num"><span>Pregrade po širini</span><input type="number" data-k="cx" min="1" max="8" step="1" inputmode="numeric"></label>
-      <label class="num"><span>Pregrade po dubini</span><input type="number" data-k="cy" min="1" max="8" step="1" inputmode="numeric"></label>
-      ${field('r', 'Ugao (zaobljenje)', 'mm')}
+      <label class="num"><span>Pregrade ↔</span><span class="in"><input type="number" data-k="cx" min="1" max="8" step="1" inputmode="numeric">${STEP}</span></label>
+      <label class="num"><span>Pregrade ↕</span><span class="in"><input type="number" data-k="cy" min="1" max="8" step="1" inputmode="numeric">${STEP}</span></label>
+      ${field('r', 'Ugao', 'mm')}
     </div>
+    <div class="row2">${field('zid', 'Zid', 'mm', 'placeholder="opšti"')}</div>
     <label class="chk"><input type="checkbox" data-k="lid"> Poklopac (nasadni, sa usnom)</label>
     <div><div class="hint" style="margin-bottom:4px">Ručka</div>
       <div class="seg" id="ed-handle" role="group" aria-label="Ručka">
@@ -99,7 +103,7 @@ function buildEditor() {
       </div>
       <p class="hint" id="ed-handle-hint" style="margin-top:4px"></p>
     </div>
-    <div class="row2 c2">${field('zid', 'Debljina zida', 'mm', 'placeholder="opšta"')}<span></span></div>
+    
     <div class="btnrow">
       <button type="button" class="mini" data-do="split">Podeli na 2</button>
       <button type="button" class="mini danger" data-do="remove">Ukloni</button>
@@ -166,15 +170,17 @@ $('editor').addEventListener('click', (e) => {
 });
 
 // ------------------------------------------------------------------ 2D plan
+let vbFreeze = null;
 function draw2d() {
   const svg = $('v2d');
   const W = S.W, D = S.D, g = S.gap;
   const pad = Math.max(W, D) * 0.09, fs = Math.max(W, D) / 40;
-  svg.setAttribute('viewBox', `${-pad} ${-pad} ${W + 2 * pad} ${D + 2 * pad + fs * 1.6}`);
+  svg.setAttribute('viewBox', vbFreeze || `${-pad} ${-pad} ${W + 2 * pad} ${D + 2 * pad + fs * 1.6}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   let s = `<rect x="0" y="0" width="${W}" height="${D}" fill="none" stroke="var(--mute)" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>`;
-  s += `<text x="${W / 2}" y="${-pad * 0.35}" text-anchor="middle" font-size="${fs}" fill="var(--mute)">${fmt(W)} mm</text>`;
-  s += `<text transform="translate(${-pad * 0.35} ${D / 2}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="var(--mute)">${fmt(D)} mm</text>`;
+  s += `<text class="dimlbl" data-k="W" x="${W / 2}" y="${-pad * 0.35}" text-anchor="middle" font-size="${fs}" fill="var(--mute)">↔ ${fmt(W)} mm</text>`;
+  s += `<text class="dimlbl" data-k="D" transform="translate(${-pad * 0.35} ${D / 2}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="var(--mute)">↕ ${fmt(D)} mm</text>`;
+  s += `<text class="dimlbl" data-k="H" x="${W}" y="${-pad * 0.35}" text-anchor="end" font-size="${fs}" fill="var(--mute)">visina ${fmt(S.H)} mm</text>`;
   s += `<text x="${W / 2}" y="${D + pad * 0.55 + fs}" text-anchor="middle" font-size="${fs * 0.85}" fill="var(--mute)" letter-spacing="2">▼ NAPRED (prednja strana)</text>`;
   RES.rows.forEach((R) => R.boxes.forEach((B) => {
     const b = B.src, x = B.x + g / 2, y = R.ytop + g / 2, w = B.ow, d = B.od;
@@ -208,6 +214,7 @@ function draw2d() {
     R.boxes.forEach((B, bi) => { if (bi < R.boxes.length - 1) s += grip('ev', B.x + B.w, R.ytop + 1, B.x + B.w, R.ytop + R.d - 1, `data-kind="w" data-row="${R.id}" data-box="${B.id}"`, true); });
     if (ri < RES.rows.length - 1) s += grip('eh', 1, R.ytop + R.d, W - 1, R.ytop + R.d, `data-kind="d" data-row="${R.id}"`, false);
   });
+  s += grip('es', W, 1, W, D - 1, 'data-kind="sw"', true) + grip('es', 1, D, W - 1, D, 'data-kind="sd"', false);
   svg.innerHTML = s;
 }
 // ---- vuci ivicu: prevuci granicu između kutijica (širina) ili između redova (dubina)
@@ -218,7 +225,11 @@ $('v2d').addEventListener('pointerdown', (e) => {
   const g = e.target.closest('.edge'); if (!g) return;
   e.preventDefault();
   const kind = g.dataset.kind, pt = mmAt(e);
-  if (kind === 'w') {
+  if (kind === 'sw' || kind === 'sd') {
+    const vb = $('v2d').viewBox.baseVal;
+    vbFreeze = `${vb.x} ${vb.y} ${vb.width + S.W * 0.7} ${vb.height + S.D * 0.7}`; $('v2d').setAttribute('viewBox', vbFreeze);
+    drag = { kind, pt: mmAt(e), W0: S.W, D0: S.D };
+  } else if (kind === 'w') {
     const f = findBox(S, g.dataset.box), ri = S.rows.indexOf(f.row), R = RES.rows[ri];
     drag = { kind, pt, row: f.row, bi: f.bi, a: R.boxes[f.bi], b: R.boxes[f.bi + 1], lw0: R.boxes[f.bi].w, rw0: R.boxes[f.bi + 1].w };
   } else {
@@ -231,6 +242,13 @@ $('v2d').addEventListener('pointermove', (e) => {
   if (!drag) return;
   const pt = mmAt(e);
   const snap = e.shiftKey ? 0.1 : 1;
+  if (drag.kind === 'sw' || drag.kind === 'sd') {
+    const k = drag.kind === 'sw' ? 'W' : 'D', v = Math.max(30, Math.round((drag[k + '0'] + (drag.kind === 'sw' ? pt.x - drag.pt.x : pt.y - drag.pt.y)) / snap) * snap);
+    go({ act: 'setSpace', k, v: Math.round(v * 10) / 10 }, { keepEditor: true });
+    showTip(e, `${k === 'W' ? 'širina' : 'dubina'} ${fmt(S[k])} mm`);
+    const el = $('v2d').querySelector(`.edge[data-kind="${drag.kind}"]`); if (el) el.classList.add('drag');
+    return;
+  }
   if (drag.kind === 'w') {
     const tot = drag.lw0 + drag.rw0;
     const lo = Math.max(minW(S, drag.a.src), tot - (BED + S.gap)), hi = Math.min(BED + S.gap, tot - minW(S, drag.b.src));
@@ -256,7 +274,7 @@ function showTip(e, t) {
   tip.style.left = Math.min(Math.max(e.clientX - r.left + 14, 6), r.width - tip.offsetWidth - 6) + 'px';
   tip.style.top = Math.max(e.clientY - r.top - 34, 6) + 'px';
 }
-function endDrag() { if (!drag) return; drag = null; tip.hidden = true; $('v2d').classList.remove('dragging'); draw2d(); }
+function endDrag() { if (!drag) return; drag = null; vbFreeze = null; tip.hidden = true; $('v2d').classList.remove('dragging'); draw2d(); }
 $('v2d').addEventListener('pointerup', endDrag);
 $('v2d').addEventListener('pointercancel', endDrag);
 // dupli klik na ivicu: vrati kutijice u auto raspodelu
@@ -265,7 +283,18 @@ $('v2d').addEventListener('dblclick', (e) => {
   if (g.dataset.kind === 'w') { const f = findBox(S, g.dataset.box); f.row.boxes.forEach((b) => { b.fix = false; }); go({ act: 'setSpace', k: 'W', v: S.W }); }
   else { S.rows.forEach((r) => { r.fix = false; }); go({ act: 'setSpace', k: 'D', v: S.D }); }
 });
-$('v2d').addEventListener('click', (e) => { if (e.target.closest('.edge')) return; const g = e.target.closest('.bx'); if (g) { sel = g.dataset.id; renderAll(); if (matchMedia('(max-width: 860px)').matches) $('editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } });
+function inlineEdit(el, k) {
+  const r = el.getBoundingClientRect(), st = $('stage').getBoundingClientRect();
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.className = 'inl'; inp.value = S[k]; inp.step = 'any';
+  inp.style.left = Math.max(4, r.left - st.left + r.width / 2 - 45) + 'px'; inp.style.top = Math.max(4, r.top - st.top - 4) + 'px';
+  $('stage').appendChild(inp); inp.focus(); inp.select();
+  let done = false;
+  const fin = (ok) => { if (done) return; done = true; const v = num(inp.value); inp.remove(); if (ok && v != null && v > 0) go({ act: 'setSpace', k, v }); };
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') fin(true); else if (e.key === 'Escape') fin(false); });
+  inp.addEventListener('blur', () => fin(true));
+}
+$('v2d').addEventListener('click', (e) => { const d = e.target.closest('.dimlbl'); if (d) { inlineEdit(d, d.dataset.k); return; } if (e.target.closest('.edge')) return; const g = e.target.closest('.bx'); if (g) { sel = g.dataset.id; renderAll(); if (matchMedia('(max-width: 860px)').matches) $('pop').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } });
 
 // ------------------------------------------------------------------ provera, rezultat
 const cache = new Map();   // ključ parametara -> rezultat geometrije
@@ -441,6 +470,7 @@ function setTab(t) {
   const is3 = t === '3d';
   $('tab2d').setAttribute('aria-selected', String(!is3)); $('tab3d').setAttribute('aria-selected', String(is3));
   $('v2d').toggleAttribute('hidden', is3); $('v3d').toggleAttribute('hidden', !is3); $('opts3d').toggleAttribute('hidden', !is3);
+  $('pop').hidden = is3; $('ptools').hidden = is3; $('planwrap').classList.toggle('only3d', is3);
   if (is3) { build3d(); requestAnimationFrame(() => three && three.resize()); }
 }
 $('tab2d').addEventListener('click', () => setTab('2d'));
