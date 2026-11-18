@@ -1,6 +1,5 @@
 import { BED, PRESETS, akcija, normalize, pocetnoStanje, delovi, findBox, reseed, minW, minDb, presetOf } from './layout.js';
 import { stlBytes } from './geom.js';
-import { threeMF, slozi } from './threemf.js';
 
 const $ = (id) => document.getElementById(id);
 const KEY = 'mala3d-kutije-v1';
@@ -501,7 +500,6 @@ function infoText() {
     `Štampa: zid ${S.print.zid}, dno ${S.print.dno}, pregrada ${S.print.pregrada}, poklopac ${S.print.poklopac}, usna ${S.print.usna}, tolerancija ${S.print.tol} mm`, ''];
   for (const d of DEL) L.push(`${d.label}: ${dimStr(d)} mm, položaj x=${d.x.toFixed(1)} y(od prednje strane)=${d.y.toFixed(1)}, pregrade ${d.p.cx}x${d.p.cy}${d.p.lid ? ', poklopac' : ''}${d.p.handle !== 'nema' ? ', ' + d.p.handle : ''}`);
   L.push('', 'Telo štampaj na dnu, otvorom nagore, bez podupirača. Poklopac pločom nadole, usnom nagore.',
-    'Svaki 3MF je već složen na ploču 256 x 256 mm (ako ne staje sve, ima više fajlova: _ploca1, _ploca2).',
     'Napomena: ručka (klin) izlazi 6 mm van mere kutijice, na prednjoj strani.');
   return L.join('\n');
 }
@@ -510,20 +508,13 @@ $('dl').addEventListener('click', async () => {
   try {
     const zip = new JSZip();
     const root = `kutije_${Math.round(S.W)}x${Math.round(S.D)}x${Math.round(S.H)}`;
-    const all = [];
     for (const d of DEL) {
       const R = cache.get(keyOf(d.p));
       const folder = `${root}/${d.label}_${dimStr(d)}`;
       const base = `${d.label}_${dimStr(d)}`;
       zip.file(`${folder}/${base}_telo.stl`, stlBytes(R.telo));
-      const items = [{ name: `${d.label}_telo`, mesh: R.telo, w: R.bbox.telo[0], d: R.bbox.telo[1] }];
-      if (R.poklopac) { zip.file(`${folder}/${base}_poklopac.stl`, stlBytes(R.poklopac)); items.push({ name: `${d.label}_poklopac`, mesh: R.poklopac, w: R.bbox.poklopac[0], d: R.bbox.poklopac[1] }); }
-      all.push(...items);
-      const plates = slozi(items, BED);
-      for (let i = 0; i < plates.length; i++) zip.file(`${folder}/${base}${plates.length > 1 ? '_ploca' + (i + 1) : ''}.3mf`, await threeMF(JSZip, plates[i]));
+      if (R.poklopac) zip.file(`${folder}/${base}_poklopac.stl`, stlBytes(R.poklopac));
     }
-    const plates = slozi(all, BED);
-    for (let i = 0; i < plates.length; i++) zip.file(`${root}/sve_ploca${i + 1}.3mf`, await threeMF(JSZip, plates[i]));
     zip.file(`${root}/info.txt`, infoText());
     const data = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/zip' })); a.download = `${root}.zip`;
