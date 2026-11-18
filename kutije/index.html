@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mala 3D Fabrika · Modularne kutijice</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@600;800&display=swap">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">MALA <b>3D</b> FABRIKA</div>
+    <div class="sub">Modularne kutijice · STL / 3MF za Bambu Lab A1</div>
+    <a class="back" href="../">← slova-lampe</a>
+  </header>
+
+  <div class="cols">
+    <div class="panel steps">
+      <section class="step">
+        <h2><i>1</i> Prostor</h2>
+        <div class="row2">
+          <label class="num"><span>Širina</span><span class="in"><input type="number" id="W" inputmode="decimal" step="any"><span class="u">mm</span></span></label>
+          <label class="num"><span>Dubina</span><span class="in"><input type="number" id="D" inputmode="decimal" step="any"><span class="u">mm</span></span></label>
+          <label class="num"><span>Visina</span><span class="in"><input type="number" id="H" inputmode="decimal" step="any"><span class="u">mm</span></span></label>
+        </div>
+        <p class="hint">Unutrašnja mera fioke ili police. Kutijice popunjavaju širinu i dubinu, a visina je najveća dozvoljena. Napred je dno plana.</p>
+        <div class="row2 c2">
+          <label class="num"><span>Brza mreža: kolone</span><input type="number" id="g-c" value="3" min="1" max="12" inputmode="numeric"></label>
+          <label class="num"><span>redovi</span><input type="number" id="g-r" value="2" min="1" max="12" inputmode="numeric"></label>
+        </div>
+        <button type="button" class="mini" id="grid">Postavi jednaku mrežu (zamenjuje raspored)</button>
+      </section>
+
+      <section class="step">
+        <h2><i>2</i> Kutijice</h2>
+        <div class="boxlist" id="boxlist"></div>
+        <div class="btnrow">
+          <button type="button" class="mini" id="add-row">+ red</button>
+          <button type="button" class="mini" id="add-box">+ kutijica u red</button>
+        </div>
+        <div id="editor"></div>
+      </section>
+
+      <section class="step">
+        <h2><i>3</i> Štampa</h2>
+        <div class="seg" id="preset" role="group" aria-label="Varijanta">
+          <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
+          <button type="button" data-v="lagana" aria-pressed="false">Laka i brza</button>
+        </div>
+        <p class="hint" id="preset-hint"></p>
+        <div class="row2">
+          <label class="num"><span>Zid</span><span class="in"><input type="number" id="p-zid" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+          <label class="num"><span>Dno</span><span class="in"><input type="number" id="p-dno" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+          <label class="num"><span>Pregrada</span><span class="in"><input type="number" id="p-pregrada" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+          <label class="num"><span>Poklopac</span><span class="in"><input type="number" id="p-poklopac" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+          <label class="num"><span>Usna poklopca</span><span class="in"><input type="number" id="p-usna" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+          <label class="num"><span>Tolerancija poklopca</span><span class="in"><input type="number" id="p-tol" step="0.05" inputmode="decimal"><span class="u">mm</span></span></label>
+        </div>
+        <label class="num"><span>Zazor između kutijica (u fioci)</span><span class="in"><input type="number" id="gap" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
+        <button type="button" class="mini" id="reset">Vrati početno stanje</button>
+      </section>
+    </div>
+
+    <div class="view">
+      <div class="panel">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab2d" aria-selected="true">2D plan</button>
+          <button type="button" role="tab" id="tab3d" aria-selected="false">3D model</button>
+          <div class="opts" id="opts3d" hidden>
+            <label><input type="checkbox" id="o-lid" checked> Poklopci</label>
+            <span class="slider">Razmak <input type="range" id="o-exp" min="0" max="60" value="0"></span>
+          </div>
+        </div>
+        <div class="stage" id="stage">
+          <div class="badge busy" id="badge"><span class="dot"></span><span id="badge-t">Učitavam…</span></div>
+          <svg id="v2d" role="img" aria-label="Raspored odozgo" xmlns="http://www.w3.org/2000/svg"></svg>
+          <canvas id="v3d" hidden></canvas>
+          <div class="err" id="err" hidden></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i> izabrana</span>
+          <span><i style="background:var(--lidc)"></i> poklopac</span>
+          <span><i style="border-top:2px dashed var(--mute);height:0;width:12px"></i> pregrade</span>
+          <span><i style="background:var(--bad)"></i> problem</span>
+        </div>
+      </div>
+
+      <div class="panel result" id="result">
+        <h2>Provera i rezultat</h2>
+        <div class="issues" id="issues"></div>
+        <div class="sum" id="sum"></div>
+        <div class="tw"><table class="parts" id="parts"></table></div>
+        <div class="btnrow">
+          <button type="button" class="btn" id="dl" disabled>Preuzmi ZIP (STL + 3MF)</button>
+          <span class="msg" id="dlmsg"></span>
+        </div>
+        <p class="note">Kutijicu štampaj na dnu, otvorom nagore, bez podupirača. Poklopac štampaj pločom nadole, usnom nagore. 3MF fajlovi su već složeni na ploču 256 × 256 mm.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./lib/three.min.js"></script>
+<script src="./lib/OrbitControls.js"></script>
+<script src="./lib/jszip.min.js"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
