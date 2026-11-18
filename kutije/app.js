@@ -39,6 +39,8 @@ document.querySelectorAll('#preset button').forEach((b) => b.addEventListener('c
 $('grid').addEventListener('click', () => { $('gridform').hidden = true; go({ act: 'grid', cols: num($('g-c').value) || 1, rows: num($('g-r').value) || 1 }); });
 $('grid-toggle').addEventListener('click', () => { $('gridform').hidden = !$('gridform').hidden; });
 $('pop-x').addEventListener('click', () => { const c = $('pop').classList.toggle('min'); $('pop-x').textContent = c ? '+' : '–'; });
+function syncAllLids() { const all = S.rows.every((r) => r.boxes.every((b) => b.lid)); $('all-lids').setAttribute('aria-pressed', String(all)); $('all-lids').textContent = all ? 'Skini poklopce' : 'Svi poklopci'; }
+$('all-lids').addEventListener('click', () => { const all = S.rows.every((r) => r.boxes.every((b) => b.lid)); go({ act: 'allLids', v: !all }); });
 $('add-row').addEventListener('click', () => go({ act: 'addRow' }));
 $('add-box').addEventListener('click', () => { const f = findBox(S, sel); go({ act: 'addBox', rowId: (f.row || S.rows[S.rows.length - 1]).id }); const r = (f.row || S.rows[S.rows.length - 1]); sel = r.boxes[r.boxes.length - 1].id; renderAll(); });
 $('reset').addEventListener('click', () => { if (!confirm('Vratiti početno stanje? Raspored i podešavanja se brišu.')) return; S = pocetnoStanje(); RES = normalize(S); sel = S.rows[0].boxes[0].id; save(); renderAll(); schedule(); });
@@ -95,7 +97,13 @@ function buildEditor() {
       <label class="num"><span>Pregrade ↕</span><span class="in"><input type="number" data-k="cy" min="1" max="8" step="1" inputmode="numeric">${STEP}</span></label>
       ${field('r', 'Ugao', 'mm')}
     </div>
-    <div class="row2">${field('zid', 'Zid', 'mm', 'placeholder="opšti"')}</div>
+    <div class="row2">${field('zid', 'Zid', 'mm', 'placeholder="opšti"')}${field('nagib', 'Nagib', 'mm')}</div>
+    <label class="chk"><input type="checkbox" data-k="rub"> Rub pri vrhu</label>
+    <div><div class="hint" style="margin-bottom:4px">Tekstura zida</div>
+      <div class="seg" id="ed-tex" role="group" aria-label="Tekstura">
+        <button type="button" data-tex="nema">Bez</button><button type="button" data-tex="zlebovi">Žlebovi</button><button type="button" data-tex="pruge">Pruge</button>
+      </div>
+    </div>
     <label class="chk"><input type="checkbox" data-k="lid"> Poklopac (nasadni, sa usnom)</label>
     <div><div class="hint" style="margin-bottom:4px">Ručka</div>
       <div class="seg" id="ed-handle" role="group" aria-label="Ručka">
@@ -105,6 +113,7 @@ function buildEditor() {
     </div>
     
     <div class="btnrow">
+      <button type="button" class="mini" data-do="styleAll">Stil svima</button>
       <button type="button" class="mini" data-do="split">Podeli na 2</button>
       <button type="button" class="mini danger" data-do="remove">Ukloni</button>
     </div>
@@ -112,6 +121,7 @@ function buildEditor() {
   syncEditor();
 }
 function syncEditor() {
+  syncAllLids();
   const f = findBox(S, sel); if (!f.box) return;
   if (builtFor !== sel) { buildEditor(); return; }
   const b = f.box, ri = S.rows.indexOf(f.row), B = RES.rows[ri].boxes[f.bi], R = RES.rows[ri];
@@ -122,8 +132,9 @@ function syncEditor() {
   const singleBox = f.row.boxes.length < 2, singleRow = S.rows.length < 2;
   put(q('w'), b.fix && !singleBox ? b.w : B.w); q('w').readOnly = singleBox;
   put(q('d'), f.row.fix && !singleRow ? f.row.d : R.d); q('d').readOnly = singleRow;
-  put(q('h'), B.h); put(q('cx'), b.cx); put(q('cy'), b.cy); put(q('r'), b.r); put(q('zid'), b.zid ?? '');
-  q('lid').checked = !!b.lid;
+  put(q('h'), B.h); put(q('cx'), b.cx); put(q('cy'), b.cy); put(q('r'), b.r); put(q('zid'), b.zid ?? ''); put(q('nagib'), b.nagib ?? 0);
+  q('lid').checked = !!b.lid; q('rub').checked = !!b.rub;
+  E.querySelectorAll('#ed-tex button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.tex === (b.tex || 'nema'))));
   q('w').classList.toggle('bad', b.fix && !singleBox && Math.abs(b.w - B.w) > 0.05);
   q('h').classList.toggle('bad', B.h > S.H + 1e-6);
   E.querySelector('[data-tag="w"]').innerHTML = singleBox ? '<span class="hint">jedina u redu</span>' : (b.fix ? '<button type="button" class="fixed-tag" data-do="unfixW">ručno · vrati na auto</button>' : '<span class="hint">auto</span>');
@@ -141,6 +152,7 @@ $('editor').addEventListener('input', (e) => {
   const f = findBox(S, sel); if (!f.box) return;
   let v = num(e.target.value);
   if (k === 'zid') { go({ act: 'set', boxId: sel, k: 'zid', v: v != null && v > 0 ? v : null }, { keepEditor: true }); return; }
+  if (k === 'nagib') { if (v != null && v >= 0) go({ act: 'set', boxId: sel, k, v: Math.min(v, 15) }, { keepEditor: true }); return; }
   if (v == null || v <= 0) return;
   if (k === 'w') go({ act: 'setW', rowId: f.row.id, boxId: sel, v }, { keepEditor: true });
   else if (k === 'd') go({ act: 'setD', rowId: f.row.id, v }, { keepEditor: true });
@@ -149,10 +161,12 @@ $('editor').addEventListener('input', (e) => {
 });
 $('editor').addEventListener('change', (e) => {
   const k = e.target.dataset && e.target.dataset.k;
-  if (k === 'lid') go({ act: 'set', boxId: sel, k: 'lid', v: e.target.checked });
+  if (k === 'lid' || k === 'rub') go({ act: 'set', boxId: sel, k, v: e.target.checked });
   else if (k) { builtFor = sel; syncEditor(); }
 });
 $('editor').addEventListener('click', (e) => {
+  const tb = e.target.closest('[data-tex]');
+  if (tb) { go({ act: 'set', boxId: sel, k: 'tex', v: tb.dataset.tex }); return; }
   const hb = e.target.closest('[data-handle]');
   if (hb && !hb.disabled) { go({ act: 'set', boxId: sel, k: 'handle', v: hb.dataset.handle }); return; }
   const d = e.target.closest('[data-do]'); if (!d) return;
@@ -161,6 +175,7 @@ $('editor').addEventListener('click', (e) => {
   if (w === 'unfixW') go({ act: 'unfixW', rowId: f.row.id, boxId: sel });
   else if (w === 'unfixD') go({ act: 'unfixD', rowId: f.row.id });
   else if (w === 'autoH') go({ act: 'set', boxId: sel, k: 'h', v: null });
+  else if (w === 'styleAll') go({ act: 'styleAll', boxId: sel });
   else if (w === 'split') go({ act: 'split', rowId: f.row.id, boxId: sel, n: 2 });
   else if (w === 'remove') {
     const next = f.row.boxes[f.bi + 1] || f.row.boxes[f.bi - 1];
@@ -521,7 +536,7 @@ $('dl').addEventListener('click', async () => {
 // ------------------------------------------------------------------ crtanje svega
 function renderAll(keepEditor) {
   syncSpace();
-  renderList();
+  renderList(); syncAllLids();
   if (keepEditor) syncEditor(); else { builtFor = null; buildEditor(); }
   draw2d();
   renderIssues();

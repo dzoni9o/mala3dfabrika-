@@ -18,7 +18,7 @@ const nid = (p) => p + (++uid);
 export function reseed(s) { let m = uid; for (const r of s.rows) { m = Math.max(m, parseInt(r.id.slice(1), 10) || 0); for (const b of r.boxes) m = Math.max(m, parseInt(b.id.slice(1), 10) || 0); } uid = m; }
 
 export function novaKutija(o = {}) {
-  return { id: nid('k'), w: 50, fix: false, h: null, cx: 1, cy: 1, lid: false, handle: 'nema', r: 3, zid: null, ...o };
+  return { id: nid('k'), w: 50, fix: false, h: null, cx: 1, cy: 1, lid: false, handle: 'nema', r: 3, zid: null, nagib: 3, rub: true, tex: 'nema', ...o };
 }
 export function noviRed(o = {}) {
   return { id: nid('r'), d: 50, fix: false, boxes: [novaKutija()], ...o };
@@ -93,8 +93,9 @@ function roundTo(total, vals, items) {
 export function zid(s, b) { return b.zid ?? s.print.zid; }
 export function minInnerX(s, b) { return Math.max(MIN_INNER, b.cx * MIN_CELL + (b.cx - 1) * s.print.pregrada); }
 export function minInnerY(s, b) { return Math.max(MIN_INNER, b.cy * MIN_CELL + (b.cy - 1) * s.print.pregrada); }
-export const minW = (s, b) => r1(2 * zid(s, b) + minInnerX(s, b) + s.gap + 0.05);
-export const minDb = (s, b) => r1(2 * zid(s, b) + minInnerY(s, b) + s.gap + 0.05);
+export const kosina = (b) => (b.nagib ?? 0) + (b.rub ?? false ? 0.8 : 0);
+export const minW = (s, b) => r1(2 * (zid(s, b) + kosina(b)) + minInnerX(s, b) + s.gap + 0.05);
+export const minDb = (s, b) => r1(2 * (zid(s, b) + kosina(b)) + minInnerY(s, b) + s.gap + 0.05);
 export const boxH = (s, b) => (b.h == null ? s.H : b.h);
 
 // ---------------------------------------------------------------- rešavanje
@@ -173,13 +174,13 @@ function provera(s, out, R, B) {
   if (B.od > BED + 1e-6) {
     add('err', 'staje_d', `dubina ${B.od} mm ne staje na ploču ${BED} mm.`, { label: 'Dodaj još jedan red', act: 'addRow' });
   }
-  if (R.ok && B.ow < 2 * B.t + minInnerX(s, b) - 1e-6) {
-    add('err', 'min_w', `previše uska za zid ${B.t} mm i ${b.cx} pregrada (najmanje ${minW(s, b)} mm).`,
-      b.cx > 1 ? { label: 'Smanji broj pregrada u širini', act: 'set', boxId: b.id, k: 'cx', v: Math.max(1, b.cx - 1) } : { label: `Postavi na ${minW(s, b)} mm`, act: 'setW', rowId: R.id, boxId: b.id, v: minW(s, b) });
+  if (R.ok && B.ow < 2 * (B.t + kosina(b)) + minInnerX(s, b) - 1e-6) {
+    add('err', 'min_w', `previše uska za zid ${B.t} mm, nagib ${b.nagib ?? 0} mm i ${b.cx} pregrada (najmanje ${minW(s, b)} mm).`,
+      (b.nagib ?? 0) > 0 ? { label: 'Nagib na 0 mm', act: 'set', boxId: b.id, k: 'nagib', v: 0 } : b.cx > 1 ? { label: 'Smanji broj pregrada u širini', act: 'set', boxId: b.id, k: 'cx', v: Math.max(1, b.cx - 1) } : { label: `Postavi na ${minW(s, b)} mm`, act: 'setW', rowId: R.id, boxId: b.id, v: minW(s, b) });
   }
-  if (B.od < 2 * B.t + minInnerY(s, b) - 1e-6) {
-    add('err', 'min_d', `prerana za zid ${B.t} mm i ${b.cy} pregrada (najmanje ${minDb(s, b)} mm).`,
-      b.cy > 1 ? { label: 'Smanji broj pregrada u dubini', act: 'set', boxId: b.id, k: 'cy', v: Math.max(1, b.cy - 1) } : { label: `Postavi dubinu reda na ${minDb(s, b)} mm`, act: 'setD', rowId: R.id, v: minDb(s, b) });
+  if (B.od < 2 * (B.t + kosina(b)) + minInnerY(s, b) - 1e-6) {
+    add('err', 'min_d', `prerana za zid ${B.t} mm, nagib ${b.nagib ?? 0} mm i ${b.cy} pregrada (najmanje ${minDb(s, b)} mm).`,
+      (b.nagib ?? 0) > 0 ? { label: 'Nagib na 0 mm', act: 'set', boxId: b.id, k: 'nagib', v: 0 } : b.cy > 1 ? { label: 'Smanji broj pregrada u dubini', act: 'set', boxId: b.id, k: 'cy', v: Math.max(1, b.cy - 1) } : { label: `Postavi dubinu reda na ${minDb(s, b)} mm`, act: 'setD', rowId: R.id, v: minDb(s, b) });
   }
   if (B.h > s.H + 1e-6) add('err', 'visina', `visina ${B.h} mm je veća od prostora (${s.H} mm).`, { label: `Spusti na ${s.H} mm`, act: 'set', boxId: b.id, k: 'h', v: s.H });
   if (B.h < MIN_H) add('err', 'niska', `preniska, najmanja visina je ${MIN_H} mm.`, { label: `Podigni na ${MIN_H} mm`, act: 'set', boxId: b.id, k: 'h', v: MIN_H });
@@ -199,6 +200,7 @@ function provera(s, out, R, B) {
     if (!R.front) add('warn', 'rucka_red', 'ručka izlazi 6 mm napred i udarila bi u susednu kutijicu; moguća je samo u prednjem redu.', { label: 'Prebaci na rupu za prst', act: 'set', boxId: b.id, k: 'handle', v: 'rupa' });
     else if (B.ow < 34) add('warn', 'rucka_usko', 'preuska za ručku (najmanje 34 mm).', { label: 'Bez ručke', act: 'set', boxId: b.id, k: 'handle', v: 'nema' });
   }
+  if (b.tex && b.tex !== 'nema' && B.t < 1.2) add('warn', 'tex_tanko', `tekstura na zidu ${B.t} mm je veoma plitka (do ${r1(Math.min(0.6, B.t * 0.4))} mm).`, { label: 'Bez teksture', act: 'set', boxId: b.id, k: 'tex', v: 'nema' });
   if (b.r > Math.min(B.ow, B.od) / 2 - 0.5) add('warn', 'ugao', `ugao ${b.r} mm je prevelik za ovu veličinu.`, { label: 'Smanji ugao', act: 'set', boxId: b.id, k: 'r', v: r1(Math.max(0, Math.min(B.ow, B.od) / 2 - 1)) });
 }
 
@@ -260,7 +262,7 @@ export function akcija(s, a) {
       normalize(s);
       const n = row.boxes.length, fr = row.boxes.filter((b) => !b.fix), nb = novaKutija({ w: fr.length ? fr.reduce((a, b) => a + b.w, 0) / fr.length : s.W / (n + 1) });
       const src = row.boxes[row.boxes.length - 1];
-      if (src) Object.assign(nb, { h: src.h, cx: src.cx, cy: src.cy, lid: src.lid, r: src.r, zid: src.zid });
+      if (src) Object.assign(nb, { h: src.h, cx: src.cx, cy: src.cy, lid: src.lid, r: src.r, zid: src.zid, nagib: src.nagib, rub: src.rub, tex: src.tex });
       row.boxes.push(nb); break;
     }
     case 'removeBox': {
@@ -275,7 +277,7 @@ export function akcija(s, a) {
       const n = s.rows.length;
       const frr = s.rows.filter((r) => !r.fix), nr = noviRed({ d: frr.length ? frr.reduce((a, r) => a + r.d, 0) / frr.length : s.D / (n + 1) });
       const last = s.rows[n - 1].boxes[0];
-      if (last) Object.assign(nr.boxes[0], { h: last.h, cx: last.cx, cy: last.cy, lid: last.lid, r: last.r, zid: last.zid });
+      if (last) Object.assign(nr.boxes[0], { h: last.h, cx: last.cx, cy: last.cy, lid: last.lid, r: last.r, zid: last.zid, nagib: last.nagib, rub: last.rub, tex: last.tex });
       s.rows.push(nr); break;
     }
     case 'removeRow': {
@@ -295,9 +297,11 @@ export function akcija(s, a) {
     case 'grid': {
       const cols = Math.max(1, a.cols | 0), rws = Math.max(1, a.rows | 0);
       const proto = s.rows[0] && s.rows[0].boxes[0] ? s.rows[0].boxes[0] : novaKutija();
-      s.rows = Array.from({ length: rws }, () => noviRed({ d: s.D / rws, boxes: Array.from({ length: cols }, () => novaKutija({ w: s.W / cols, h: proto.h, cx: proto.cx, cy: proto.cy, lid: proto.lid, r: proto.r, zid: proto.zid })) }));
+      s.rows = Array.from({ length: rws }, () => noviRed({ d: s.D / rws, boxes: Array.from({ length: cols }, () => novaKutija({ w: s.W / cols, h: proto.h, cx: proto.cx, cy: proto.cy, lid: proto.lid, r: proto.r, zid: proto.zid, nagib: proto.nagib, rub: proto.rub, tex: proto.tex })) }));
       break;
     }
+    case 'allLids': { s.rows.forEach((r) => r.boxes.forEach((b) => { b.lid = a.v; if (!a.v && b.handle === 'rucka') b.handle = 'nema'; })); break; }
+    case 'styleAll': { const { box } = findBox(s, a.boxId); if (box) s.rows.forEach((r) => r.boxes.forEach((b) => { b.nagib = box.nagib; b.rub = box.rub; b.tex = box.tex; b.r = box.r; })); break; }
     case 'preset': {
       const P = PRESETS[a.v]; if (!P) break;
       Object.assign(s.print, P, { preset: a.v }); break;
@@ -321,7 +325,7 @@ export function delovi(s, res) {
     const b = B.src;
     out.push({
       id: B.id, label: B.label, x: r3(B.x + s.gap / 2), y: r3(B.y + s.gap / 2),
-      p: { w: B.ow, d: B.od, h: B.h, lid: !!b.lid, handle: b.handle, front: B.front, cx: b.cx, cy: b.cy, r: b.r,
+      p: { w: B.ow, d: B.od, h: B.h, lid: !!b.lid, handle: b.handle, front: B.front, cx: b.cx, cy: b.cy, r: b.r, nagib: b.nagib ?? 0, rub: !!(b.rub ?? false), tex: b.tex || 'nema',
         t: B.t, f: p.dno, td: p.pregrada, lidT: p.poklopac, lipT: p.usna, lipH: LIP_H, tol: p.tol },
     });
   }

@@ -2,6 +2,8 @@
 // Koordinate: x 0..w, y 0..d (y = 0 je prednja strana), z 0..visina.
 
 const SEG = 48;
+const RIM_OUT = 0.8;   // koliko rub (kragna) viri van kosog zida
+const RIM_H = 3;       // visina ruba
 
 export function makeEngine(mf) {
   const CS = mf.CrossSection, M = mf.Manifold;
@@ -22,37 +24,92 @@ export function makeEngine(mf) {
   }
   const bb = (man) => { const b = man.boundingBox(); return [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]]; };
 
+  // Spoljna (ili unutrašnja, uz extra = debljina zida) površina: kosi zid, širi gore, uz rub (kragnu) pri vrhu.
+  // inset(z): koliko je obris uvučen u odnosu na vrh kutijice na visini z.
+  const SLAB = 0.02;
+  function slab(w, d, r, ins, z) {
+    return rrect(w - 2 * ins, d - 2 * ins, Math.max(0, r - ins)).translate([ins, ins]).extrude(SLAB).translate([0, 0, z]);
+  }
+  function loft(w, d, r, i0, z0, i1, z1) {
+    if (Math.abs(i0 - i1) < 1e-6) return rrect(w - 2 * i0, d - 2 * i0, Math.max(0, r - i0)).translate([i0, i0]).extrude(z1 - z0).translate([0, 0, z0]);
+    return M.hull([slab(w, d, r, i0, z0), slab(w, d, r, i1, z1 - SLAB)]);
+  }
+  function profil(p, hb, extra, top) {
+    const { w, d, r, nagib, rub } = p;
+    const n = nagib || 0, ro = rub ? RIM_OUT : 0, rh = rub ? RIM_H : 0;
+    if (!rub) {
+      const s = loft(w, d, r, extra + n, 0, extra, hb);
+      return top ? uni(s, loft(w, d, r, extra, hb - 0.01, extra, hb + top)) : s;
+    }
+    const zA = hb - rh, zB = zA + ro;
+    let s = loft(w, d, r, extra + ro + n, 0, extra + ro, zA);
+    s = uni(s, loft(w, d, r, extra + ro, zA - 0.01, extra, zB));
+    s = uni(s, loft(w, d, r, extra, zB - 0.01, extra, hb + (top || 0)));
+    return s;
+  }
+
+  function tekstura(p, hb, outer) {
+    const { w, d, r, t, tex, nagib, rub } = p;
+    if (!tex || tex === 'nema') return null;
+    const dt = Math.min(0.6, t * 0.4), n = nagib || 0, ro = rub ? RIM_OUT : 0;
+    const zLo = 3, zHi = hb - (rub ? RIM_H : 0) - 2;
+    if (zHi - zLo < 6) return null;
+    const shell = sub(outer, profil(p, hb, dt, 1));
+    const cut = [];
+    const reach = n + ro + dt + 0.4, m = r + 4;
+    if (tex === 'zlebovi') {
+      const pitch = 4.5, gw = 1.5;
+      const bar = (x, y, bw, bh) => M.cube([bw, bh, zHi - zLo]).translate([x, y, zLo]);
+      for (let x = m; x < w - m; x += pitch) {
+        cut.push(bar(x, -1, gw, reach + 1)); cut.push(bar(x, d - reach, gw, reach + 1));
+      }
+      for (let y = m; y < d - m; y += pitch) {
+        cut.push(bar(-1, y, reach + 1, gw)); cut.push(bar(w - reach, y, reach + 1, gw));
+      }
+    } else {
+      const pitch = 3.2, gh = 1.0;
+      for (let z = zLo; z < zHi - gh; z += pitch) cut.push(M.cube([w + 2, d + 2, gh]).translate([-1, -1, z]));
+    }
+    if (!cut.length) return null;
+    return M.union(cut).intersect(shell);
+  }
+
   function telo(p) {
     const { w, d, h, lid, handle, front, cx, cy, r, t, f, td, lidT, lipH } = p;
+    const n = p.nagib || 0;
     const hb = lid ? h - lidT : h;
-    let body = rrect(w, d, r).extrude(hb);
-    const iw = w - 2 * t, id = d - 2 * t;
-    const cw = (iw - (cx - 1) * td) / cx, ch = (id - (cy - 1) * td) / cy;
-    const ri = Math.max(0, Math.min(r - t, cw / 2 - 0.01, ch / 2 - 0.01));
-    let cav = null;
-    for (let i = 0; i < cx; i++) for (let j = 0; j < cy; j++) {
-      const c = rrect(cw, ch, ri).translate([t + i * (cw + td), t + j * (ch + td)]);
-      cav = cav ? uni(cav, c) : c;
+    const rubOn = !!p.rub && hb >= 14;
+    const q = { ...p, rub: rubOn };
+    const outer = profil(q, hb, 0, 0);
+    let body = outer;
+    const cavity = profil(q, hb, t, 2).intersect(M.cube([w + 2, d + 2, hb + 3]).translate([-1, -1, f]));
+    body = sub(body, cavity);
+    // pregrade (iste visine kao i zid, a ispod usne ako ima poklopac)
+    if (cx > 1 || cy > 1) {
+      const iw = w - 2 * t, id = d - 2 * t;
+      const cw = (iw - (cx - 1) * td) / cx, ch = (id - (cy - 1) * td) / cy;
+      const dh = (lid ? hb - lipH - 0.5 : hb) - f + 0.5;
+      const bars = [];
+      for (let i = 1; i < cx; i++) bars.push(M.cube([td, d, dh]).translate([t + i * cw + (i - 1) * td, 0, f - 0.5]));
+      for (let j = 1; j < cy; j++) bars.push(M.cube([w, td, dh]).translate([0, t + j * ch + (j - 1) * td, f - 0.5]));
+      body = uni(body, M.union(bars).intersect(outer));
     }
-    body = sub(body, cav.extrude(hb - f + 1).translate([0, 0, f]));
-    if (lid) {
-      // vrhovi pregrada niži od usne poklopca
-      const open = rrect(iw, id, Math.max(0, r - t)).translate([t, t]).extrude(lipH + 1.5).translate([0, 0, hb - lipH - 0.5]);
-      body = sub(body, open);
-    }
+    const reach = t + n + (rubOn ? RIM_OUT : 0) + 1.5;
     if (handle === 'rupa') {
       if (lid) {
         const zc = Math.max(f + 8, Math.min(hb - 9, hb / 2));
-        body = sub(body, cylY(7, t + 1.5, w / 2, -1, zc));
+        body = sub(body, cylY(7, reach, w / 2, -1, zc));
       } else {
         const nw = 16, z0 = hb - Math.min(12, hb - f - 2), zc = z0 + nw / 2;
-        const cut = M.cube([nw, t + 1.5, hb - zc + 1]).translate([w / 2 - nw / 2, -1, zc]);
-        body = sub(body, uni(cut, cylY(nw / 2, t + 1.5, w / 2, -1, zc)));
+        const cut = M.cube([nw, reach, hb - zc + 1]).translate([w / 2 - nw / 2, -1, zc]);
+        body = sub(body, uni(cut, cylY(nw / 2, reach, w / 2, -1, zc)));
       }
     }
+    const tx = tekstura(q, hb, outer);
+    if (tx) body = sub(body, tx);
     if (handle === 'rucka' && front) {
-      const tw = 20, out = 6, th = 1.6;
-      const prof = new CS([[[0.6, hb], [-out, hb], [-out, hb - th], [0.6, hb - th - out - 0.6]]], 'NonZero');
+      const tw = 20, out = 6, th = 1.6, inW = n + (rubOn ? RIM_OUT : 0) + 1;
+      const prof = new CS([[[inW, hb], [-out, hb], [-out, hb - th], [inW, hb - th - out - inW]]], 'NonZero');
       const tab = prof.extrude(tw).rotate([90, 0, 90]).translate([w / 2 - tw / 2, 0, 0]);
       body = uni(body, tab);
     }
