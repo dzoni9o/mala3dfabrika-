@@ -238,6 +238,19 @@ export function akcija(s, a) {
   switch (a.act) {
     case 'setSpace': { s[a.k] = a.v; break; }
     case 'setW': { const { row, bi, box } = find(s, a.rowId, a.boxId); if (!box || row.boxes.length < 2) break; box.w = a.v; box.fix = true; ensureFree(row.boxes, bi); break; }
+    case 'edgeW': {   // povlačenje ivice između dve susedne kutijice u redu: obe dobijaju novu meru
+      const { row, bi, box } = find(s, a.rowId, a.boxId); const nb = row && row.boxes[bi + 1]; if (!box || !nb) break;
+      box.w = a.lw; box.fix = true; nb.w = a.rw; nb.fix = true;
+      if (row.boxes.every((b) => b.fix)) nb.fix = false;
+      break;
+    }
+    case 'edgeD': {   // ivica između dva reda
+      const ri = s.rows.findIndex((r) => r.id === a.rowId); if (ri < 0 || !s.rows[ri + 1]) break;
+      const up = s.rows[ri], lo = s.rows[ri + 1];
+      up.d = a.ud; up.fix = true; lo.d = a.ld; lo.fix = true;
+      if (s.rows.every((r) => r.fix)) lo.fix = false;
+      break;
+    }
     case 'unfixW': { const { box } = find(s, a.rowId, a.boxId); if (box) box.fix = false; break; }
     case 'setD': { const ri = s.rows.findIndex((r) => r.id === a.rowId); if (ri < 0 || s.rows.length < 2) break; s.rows[ri].d = a.v; s.rows[ri].fix = true; ensureFree(s.rows, ri); break; }
     case 'unfixD': { const row = s.rows.find((r) => r.id === a.rowId); if (row) row.fix = false; break; }

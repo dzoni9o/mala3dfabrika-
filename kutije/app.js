@@ -66,9 +66,19 @@ function renderList() {
 }
 $('boxlist').addEventListener('click', (e) => { const b = e.target.closest('button[data-id]'); if (b) { sel = b.dataset.id; renderAll(); } });
 
+const STEP = '<button type="button" class="stp" data-d="-1" tabindex="-1" aria-label="manje">−</button><button type="button" class="stp" data-d="1" tabindex="-1" aria-label="više">+</button>';
 function field(k, label, unit, extra = '') {
-  return `<label class="num"><span>${label}</span><span class="in"><input type="number" data-k="${k}" step="any" inputmode="decimal" ${extra}><span class="u">${unit}</span></span><span data-tag="${k}"></span></label>`;
+  return `<label class="num"><span>${label}</span><span class="in"><input type="number" data-k="${k}" step="any" inputmode="decimal" ${extra}>${STEP}<span class="u">${unit}</span></span><span data-tag="${k}"></span></label>`;
 }
+document.querySelectorAll('.num .in').forEach((w) => { const u = w.querySelector('.u'); if (u && w.querySelector('input[type=number]')) u.insertAdjacentHTML('beforebegin', STEP); });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.stp'); if (!b) return;
+  const inp = b.parentElement.querySelector('input'); if (!inp || inp.readOnly) return;
+  const st = parseFloat(inp.dataset.step || (inp.step && inp.step !== 'any' ? inp.step : '1')) || 1;
+  const cur = parseFloat(inp.value) || 0;
+  inp.value = String(Math.round((cur + (+b.dataset.d) * st) * 100) / 100);
+  inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+});
 let builtFor = null;
 function buildEditor() {
   const f = findBox(S, sel);
@@ -170,7 +180,7 @@ function draw2d() {
     const b = B.src, x = B.x + g / 2, y = R.ytop + g / 2, w = B.ow, d = B.od;
     const bad = B.problems.includes('err'), warn = B.problems.includes('warn'), on = B.id === sel;
     const stroke = on ? 'var(--accent)' : bad ? 'var(--bad)' : warn ? 'var(--warn)' : 'var(--boxline)';
-    s += `<g class="bx" data-id="${B.id}">`;
+    s += `<g class="bx${on ? ' sel' : ''}" data-id="${B.id}">`;
     s += `<rect x="${x}" y="${y}" width="${Math.max(w, 0.1)}" height="${Math.max(d, 0.1)}" rx="${Math.min(b.r, w / 2, d / 2)}" fill="${bad ? 'rgba(255,106,95,.14)' : 'var(--box)'}" stroke="${stroke}" stroke-width="${on ? 3 : 1.5}" vector-effect="non-scaling-stroke"/>`;
     const t = B.t, iw = w - 2 * t, id = d - 2 * t;
     if (iw > 1 && id > 1) {
@@ -188,9 +198,74 @@ function draw2d() {
     s += `<text x="${x + w / 2}" y="${y + d / 2 + f1 * 1.05}" text-anchor="middle" font-size="${f1 * 0.78}" fill="var(--mute)" stroke="var(--box)" stroke-width="${f1 * 0.25}" paint-order="stroke">${fmt(w)}×${fmt(d)}×${fmt(B.h)}${b.lid ? ' · P' : ''}</text>`;
     s += '</g>';
   }));
+  // ivice koje se hvataju i vuku
+  const grip = (cls, x1, y1, x2, y2, attrs, vert) => {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, gl = Math.max(W, D) * 0.045;
+    return `<g class="edge ${cls}" ${attrs}><line class="hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="grip" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`
+      + (vert ? `<rect class="pill" x="${mx - 1.6}" y="${my - gl / 2}" width="3.2" height="${gl}" rx="1.6"/>` : `<rect class="pill" x="${mx - gl / 2}" y="${my - 1.6}" width="${gl}" height="3.2" rx="1.6"/>`) + '</g>';
+  };
+  RES.rows.forEach((R, ri) => {
+    R.boxes.forEach((B, bi) => { if (bi < R.boxes.length - 1) s += grip('ev', B.x + B.w, R.ytop + 1, B.x + B.w, R.ytop + R.d - 1, `data-kind="w" data-row="${R.id}" data-box="${B.id}"`, true); });
+    if (ri < RES.rows.length - 1) s += grip('eh', 1, R.ytop + R.d, W - 1, R.ytop + R.d, `data-kind="d" data-row="${R.id}"`, false);
+  });
   svg.innerHTML = s;
 }
-$('v2d').addEventListener('click', (e) => { const g = e.target.closest('.bx'); if (g) { sel = g.dataset.id; renderAll(); } });
+// ---- vuci ivicu: prevuci granicu između kutijica (širina) ili između redova (dubina)
+let drag = null;
+const tip = $('tip');
+function mmAt(e) { const svg = $('v2d'); const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x, y: q.y }; }
+$('v2d').addEventListener('pointerdown', (e) => {
+  const g = e.target.closest('.edge'); if (!g) return;
+  e.preventDefault();
+  const kind = g.dataset.kind, pt = mmAt(e);
+  if (kind === 'w') {
+    const f = findBox(S, g.dataset.box), ri = S.rows.indexOf(f.row), R = RES.rows[ri];
+    drag = { kind, pt, row: f.row, bi: f.bi, a: R.boxes[f.bi], b: R.boxes[f.bi + 1], lw0: R.boxes[f.bi].w, rw0: R.boxes[f.bi + 1].w };
+  } else {
+    const ri = S.rows.findIndex((r) => r.id === g.dataset.row);
+    drag = { kind, pt, ri, ud0: RES.rows[ri].d, ld0: RES.rows[ri + 1].d };
+  }
+  g.classList.add('drag'); $('v2d').setPointerCapture(e.pointerId); $('v2d').classList.add('dragging');
+});
+$('v2d').addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const pt = mmAt(e);
+  const snap = e.shiftKey ? 0.1 : 1;
+  if (drag.kind === 'w') {
+    const tot = drag.lw0 + drag.rw0;
+    const lo = Math.max(minW(S, drag.a.src), tot - (BED + S.gap)), hi = Math.min(BED + S.gap, tot - minW(S, drag.b.src));
+    let lw = Math.round((drag.lw0 + (pt.x - drag.pt.x)) / snap) * snap;
+    const clamped = lw < lo || lw > hi; lw = Math.min(Math.max(lw, lo), hi); lw = Math.round(lw * 10) / 10;
+    go({ act: 'edgeW', rowId: drag.row.id, boxId: drag.a.id, lw, rw: Math.round((tot - lw) * 10) / 10 }, { keepEditor: true });
+    showTip(e, `${drag.a.label} ${fmt(lw)} | ${fmt(tot - lw)} ${drag.b.label}${clamped ? ' · granica' : ''}`);
+  } else {
+    const tot = drag.ud0 + drag.ld0, ru = S.rows[drag.ri], rl = S.rows[drag.ri + 1];
+    const lo = Math.max(Math.max(...ru.boxes.map((b) => minDb(S, b))), tot - (BED + S.gap)), hi = Math.min(BED + S.gap, tot - Math.max(...rl.boxes.map((b) => minDb(S, b))));
+    let ud = Math.round((drag.ud0 + (pt.y - drag.pt.y)) / snap) * snap;
+    const clamped = ud < lo || ud > hi; ud = Math.min(Math.max(ud, lo), hi); ud = Math.round(ud * 10) / 10;
+    go({ act: 'edgeD', rowId: ru.id, ud, ld: Math.round((tot - ud) * 10) / 10 }, { keepEditor: true });
+    showTip(e, `red ${drag.ri + 1}: ${fmt(ud)} | ${fmt(tot - ud)} :red ${drag.ri + 2}${clamped ? ' · granica' : ''}`);
+  }
+  // ivica ostaje označena za vreme vučenja
+  const sel2 = drag.kind === 'w' ? `.edge[data-box="${drag.a.id}"]` : `.edge[data-row="${S.rows[drag.ri].id}"]`;
+  const el = $('v2d').querySelector(sel2); if (el) el.classList.add('drag');
+});
+function showTip(e, t) {
+  const r = $('stage').getBoundingClientRect();
+  tip.textContent = t; tip.hidden = false;
+  tip.style.left = Math.min(Math.max(e.clientX - r.left + 14, 6), r.width - tip.offsetWidth - 6) + 'px';
+  tip.style.top = Math.max(e.clientY - r.top - 34, 6) + 'px';
+}
+function endDrag() { if (!drag) return; drag = null; tip.hidden = true; $('v2d').classList.remove('dragging'); draw2d(); }
+$('v2d').addEventListener('pointerup', endDrag);
+$('v2d').addEventListener('pointercancel', endDrag);
+// dupli klik na ivicu: vrati kutijice u auto raspodelu
+$('v2d').addEventListener('dblclick', (e) => {
+  const g = e.target.closest('.edge'); if (!g) return;
+  if (g.dataset.kind === 'w') { const f = findBox(S, g.dataset.box); f.row.boxes.forEach((b) => { b.fix = false; }); go({ act: 'setSpace', k: 'W', v: S.W }); }
+  else { S.rows.forEach((r) => { r.fix = false; }); go({ act: 'setSpace', k: 'D', v: S.D }); }
+});
+$('v2d').addEventListener('click', (e) => { if (e.target.closest('.edge')) return; const g = e.target.closest('.bx'); if (g) { sel = g.dataset.id; renderAll(); if (matchMedia('(max-width: 860px)').matches) $('editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } });
 
 // ------------------------------------------------------------------ provera, rezultat
 const cache = new Map();   // ključ parametara -> rezultat geometrije

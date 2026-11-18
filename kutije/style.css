@@ -137,3 +137,28 @@ header .back { margin-left: auto; color: var(--mute); font-size: 12px; text-deco
 .slider input { accent-color: var(--accent); width: 110px; }
 #v2d text { font-family: var(--font-mono); }
 #v2d .bx { cursor: pointer; }
+
+/* ---- UX: vučenje ivica, stepper, hover ---- */
+#v2d { user-select: none; -webkit-user-select: none; }
+#v2d .edge .hit { stroke: transparent; stroke-width: 22px; vector-effect: non-scaling-stroke; }
+#v2d .edge .grip { stroke: var(--accent); stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0; transition: opacity .12s; pointer-events: none; }
+#v2d .edge .pill { fill: var(--accent); opacity: .45; transition: opacity .12s; pointer-events: none; }
+#v2d .edge.ev .hit { cursor: col-resize; touch-action: none; }
+#v2d .edge.eh .hit { cursor: row-resize; touch-action: none; }
+#v2d .edge:hover .grip, #v2d .edge.drag .grip { opacity: .9; }
+#v2d .edge:hover .pill, #v2d .edge.drag .pill { opacity: 1; }
+#v2d.dragging, #v2d.dragging * { cursor: grabbing !important; }
+#v2d .bx rect:first-child { transition: fill .12s; }
+#v2d .bx:hover rect:first-child { fill: #25331f; }
+#v2d .bx.sel { filter: drop-shadow(0 0 6px rgba(234,255,0,.35)); }
+.tip { position: absolute; z-index: 3; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 700; padding: 3px 8px; pointer-events: none; white-space: nowrap; }
+.legend .tipline { flex-basis: 100%; color: var(--accent); }
+.num .in input { -moz-appearance: textfield; appearance: textfield; min-width: 0; }
+.num .in input::-webkit-outer-spin-button, .num .in input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stp { background: var(--surface2); color: var(--fg); border: 1px solid var(--line); border-left: 0; width: 30px; font: inherit; font-size: 15px; cursor: pointer; padding: 0; }
+.stp:hover { background: var(--accent); color: var(--accent-ink); }
+.stp:active { transform: translateY(1px); }
+.mini, .boxlist button, .seg button, .btn, .tabs button { transition: background .12s, color .12s, border-color .12s; }
+.step { transition: background .12s; }
+.editor { box-shadow: 0 0 0 1px rgba(234,255,0,.15), 0 8px 24px rgba(0,0,0,.35); }
+@media (max-width: 860px) { .stp { width: 38px; } #v2d .edge .hit { stroke-width: 34px; } }
