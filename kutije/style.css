@@ -196,3 +196,30 @@ header .back { margin-left: auto; color: var(--mute); font-size: 12px; text-deco
 .pop .fixed-tag, .pop .num .hint { font-size: 10px; }
 .pop .chk { font-size: 12px; }
 @media (min-width: 861px) { .stage { height: min(66vh, 680px); } .pop { max-height: min(66vh, 680px); } }
+
+/* ---- čarobnjak ---- */
+.wiz { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,10,.96); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 16px; background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.wz-card-wrap { width: min(560px, 100%); margin: auto; background: var(--surface); border: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.wz-top { display: flex; justify-content: space-between; align-items: center; }
+.wz-dots { display: flex; gap: 6px; } .wz-dots i { width: 28px; height: 4px; background: var(--line); } .wz-dots i.on { background: var(--accent); } .wz-dots i.done { background: var(--mute); }
+.wz-n { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .12em; }
+.wz-body { display: flex; flex-direction: column; gap: 12px; }
+.wz-body h2 { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 800; line-height: 1.1; }
+.wz-body h3 { margin: 6px 0 0; font-family: var(--font-display); font-size: 16px; font-weight: 800; }
+.wz-sub { margin: 0; color: var(--mute); font-size: 13px; }
+.wz-draw { width: 100%; max-width: 320px; height: auto; align-self: center; }
+.wz-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wz-row label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
+.wz-row .in { display: flex; border: 1px solid var(--line); background: var(--bg); } .wz-row input { border: 0; font-size: 20px; padding: 10px 8px; } .wz-row .u { padding: 0 8px; color: var(--mute); align-self: center; font-size: 12px; }
+.wz-cards { display: grid; gap: 8px; }
+.wz-card { display: flex; flex-direction: column; gap: 2px; text-align: left; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 14px; font: inherit; cursor: pointer; min-height: 56px; }
+.wz-card b { font-family: var(--font-display); font-size: 17px; } .wz-card span { color: var(--mute); font-size: 12px; }
+.wz-card:hover { border-color: var(--mute); }
+.wz-card[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.wz-nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.wz-nav .btn { min-width: 170px; padding: 14px 18px; font-size: 15px; }
+#bed { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 9px 10px; font: inherit; }
+details.adv2 > summary { cursor: pointer; font-size: 12px; color: var(--mute); text-transform: uppercase; letter-spacing: .1em; }
+details.adv2[open] > summary { margin-bottom: 12px; }
+header .mini { margin-left: auto; }
+@media (max-width: 520px) { .wz-body h2 { font-size: 22px; } .wz-row { grid-template-columns: 1fr; } }

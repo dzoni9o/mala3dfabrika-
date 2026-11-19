@@ -1,4 +1,5 @@
-import { BED, PRESETS, akcija, normalize, pocetnoStanje, delovi, findBox, reseed, minW, minDb, presetOf } from './layout.js';
+import { initWizard } from './wizard.js';
+import { BED, PRESETS, izCarobnjaka, akcija, normalize, pocetnoStanje, delovi, findBox, reseed, minW, minDb, presetOf } from './layout.js';
 import { stlBytes } from './geom.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,7 +14,8 @@ function valid(s) {
     && [s.W, s.D, s.H, s.gap].every(Number.isFinite) && s.print;
 }
 try { const j = JSON.parse(localStorage.getItem(KEY) || 'null'); if (valid(j)) { S = j; reseed(S); } } catch (e) { /* radi i bez memorije */ }
-if (!S) S = pocetnoStanje();
+let prvi = false;
+if (!S) { S = pocetnoStanje(); prvi = true; }
 RES = normalize(S);
 sel = S.rows[0].boxes[0].id;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -38,6 +40,14 @@ document.querySelectorAll('#preset button').forEach((b) => b.addEventListener('c
 $('grid').addEventListener('click', () => { $('gridform').hidden = true; go({ act: 'grid', cols: num($('g-c').value) || 1, rows: num($('g-r').value) || 1 }); });
 $('grid-toggle').addEventListener('click', () => { $('gridform').hidden = !$('gridform').hidden; });
 $('pop-x').addEventListener('click', () => { const c = $('pop').classList.toggle('min'); $('pop-x').textContent = c ? '+' : '–'; });
+$('bed').addEventListener('change', (e) => go({ act: 'setBed', v: +e.target.value }));
+const wiz = initWizard($('wiz'), {
+  start: {},
+  onSkip: () => {},
+  onDone: (o) => { S = izCarobnjaka(o); RES = normalize(S); sel = S.rows[0].boxes[0].id; builtFor = null; save(); renderAll(); schedule(); window.scrollTo(0, 0); },
+});
+function openWizard() { wiz.open({ W: S.W, D: S.D, H: S.H, bed: S.bed || 256 }); }
+$('wiz-open').addEventListener('click', openWizard);
 function syncAllLids() { const all = S.rows.every((r) => r.boxes.every((b) => b.lid)); $('all-lids').setAttribute('aria-pressed', String(all)); $('all-lids').textContent = all ? 'Skini poklopce' : 'Svi poklopci'; }
 $('all-lids').addEventListener('click', () => { const all = S.rows.every((r) => r.boxes.every((b) => b.lid)); go({ act: 'allLids', v: !all }); });
 $('add-row').addEventListener('click', () => go({ act: 'addRow' }));
@@ -46,6 +56,7 @@ $('reset').addEventListener('click', () => { if (!confirm('Vratiti početno stan
 
 function setIfIdle(id, v) { const el = $(id); if (document.activeElement !== el) el.value = v; }
 function syncSpace() {
+  $('bed').value = String(S.bed || 256);
   setIfIdle('W', S.W); setIfIdle('D', S.D); setIfIdle('H', S.H); setIfIdle('gap', S.gap);
   const P = S.print;
   for (const k of ['zid', 'dno', 'pregrada', 'poklopac', 'usna', 'tol']) setIfIdle('p-' + k, P[k]);
@@ -94,9 +105,9 @@ function buildEditor() {
     <div class="row2">
       <label class="num"><span>Pregrade ↔</span><span class="in"><input type="number" data-k="cx" min="1" max="8" step="1" inputmode="numeric">${STEP}</span></label>
       <label class="num"><span>Pregrade ↕</span><span class="in"><input type="number" data-k="cy" min="1" max="8" step="1" inputmode="numeric">${STEP}</span></label>
-      ${field('r', 'Ugao', 'mm')}
+      ${field('r', 'Zaobljenje', 'mm')}
     </div>
-    <div class="row2">${field('zid', 'Zid', 'mm', 'placeholder="opšti"')}${field('nagib', 'Nagib', 'mm')}</div>
+    <div class="row2">${field('zid', 'Debljina zida', 'mm', 'placeholder="opšta"')}${field('nagib', 'Kos zid', 'mm')}</div>
     <label class="chk"><input type="checkbox" data-k="rub"> Rub pri vrhu</label>
     <div><div class="hint" style="margin-bottom:4px">Tekstura zida</div>
       <div class="seg" id="ed-tex" role="group" aria-label="Tekstura">
@@ -534,6 +545,7 @@ function renderAll(keepEditor) {
   renderResult();
 }
 renderAll();
+if (prvi) openWizard();
 badge('Učitavam…', true);
 run();
 // za proveru u pregledaču / testove

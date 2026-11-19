@@ -9,10 +9,12 @@
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+<div class="wiz" id="wiz" hidden></div>
 <div class="wrap">
   <header>
     <div class="logo">MALA <b>3D</b> FABRIKA</div>
-    <div class="sub">Modularne kutijice · STL za Bambu Lab A1</div>
+    <div class="sub">Kutijice za fioke i police · STL za 3D štampu</div>
+    <button type="button" class="mini" id="wiz-open">↺ Počni iznova</button>
     <a class="back" href="../">← slova-lampe</a>
   </header>
 
@@ -28,8 +30,9 @@
         <p class="hint">Unutrašnja mera fioke ili police. Sve ostalo podešavaš direktno na planu: vuci ivice, klikni kutijicu, klikni mere.</p>
 </section>
 
-      <section class="step">
-        <h2><i>2</i> Štampa</h2>
+      <details class="step adv2"><summary>Fino podešavanje štampe</summary>
+        <label class="num"><span>Štampač (najveća ploča)</span><span class="in"><select id="bed"><option value="256">Bambu Lab A1 (256 mm)</option><option value="180">Bambu Lab A1 mini (180 mm)</option><option value="220">Ne znam (220 mm)</option><option value="350">Veliki štampač (350 mm)</option></select></span></label>
+
         <div class="seg" id="preset" role="group" aria-label="Varijanta">
           <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
           <button type="button" data-v="lagana" aria-pressed="false">Laka i brza</button>
@@ -45,7 +48,7 @@
         </div>
         <label class="num"><span>Zazor između kutijica (u fioci)</span><span class="in"><input type="number" id="gap" step="0.1" inputmode="decimal"><span class="u">mm</span></span></label>
         <button type="button" class="mini" id="reset">Vrati početno stanje</button>
-      </section>
+      </details>
     </div>
 
     <div class="view">
@@ -89,15 +92,15 @@
       </div>
 
       <div class="panel result" id="result">
-        <h2>Provera i rezultat</h2>
+        <h2>Da li je sve u redu?</h2>
         <div class="issues" id="issues"></div>
         <div class="sum" id="sum"></div>
-        <div class="tw"><table class="parts" id="parts"></table></div>
+        <details class="adv"><summary>Spisak delova</summary><div class="tw"><table class="parts" id="parts"></table></div></details>
         <div class="btnrow">
-          <button type="button" class="btn" id="dl" disabled>Preuzmi ZIP (STL)</button>
+          <button type="button" class="btn" id="dl" disabled>Preuzmi fajlove za štampu</button>
           <span class="msg" id="dlmsg"></span>
         </div>
-        <p class="note">Kutijicu štampaj na dnu, otvorom nagore, bez podupirača. Poklopac štampaj pločom nadole, usnom nagore.</p>
+        <details class="adv"><summary>Kako da štampam?</summary><p class="note">Dobićeš ZIP sa po jednim folderom za svaku kutijicu. Kutijicu štampaj okrenutu otvorom nagore, bez podupirača. Poklopac štampaj ravnom stranom nadole.</p></details>
       </div>
     </div>
   </div>
