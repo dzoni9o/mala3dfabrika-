@@ -4,210 +4,350 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mala 3D Fabrika</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@600;800&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: dve kolone (podešavanja levo, render desno); na telefonu render je prvi, pa podešavanja.
-   Tamna industrijska tema, žuta akcenat, Space Mono + Syne. */
+/* Mala 3D fabrika · svetla SaaS tema (ista kao "3D kutije"): bela kartica, meke ivice, indigo akcenat, Inter. */
 :root {
-  --bg: #0a0a0a; --surface: #121211; --surface2: #1a1a18; --line: #2b2b28; --grid: #1d1d1a;
-  --fg: #ecece4; --mute: #9a9a90; --accent: #eaff00; --accent-ink: #0a0a0a;
-  --ok: #5fd38d; --warn: #ffb020; --bad: #ff6a5f; --cut: #ff6a5f; --hole: #ff4d4d; --wire: #4da3ff;
-  --letter-o: #5b8fbf; --letter-c: #d9d6c6; --rib: #1fb67f; --base: #6e6d66;
-  --font-display: 'Syne', 'Arial Black', sans-serif; --font-mono: 'Space Mono', ui-monospace, Menlo, monospace;
-  color-scheme: dark;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f1f0ec; --surface: #fbfaf7; --surface2: #ecebe5; --line: #cfcdc4; --grid: #e2e0d8;
-    --fg: #151512; --mute: #5f5f57; --accent: #d4550a; --accent-ink: #ffffff;
-    --ok: #1d7f4a; --warn: #a85f00; --bad: #c4301f; --cut: #c4301f; --hole: #d62828; --wire: #1d63c4;
-    --letter-o: #7aaedb; --letter-c: #f4f1e4; --rib: #12805a; --base: #a9a79c;
-    color-scheme: light;
-  }
-}
-:root[data-theme="light"] {
-  --bg: #f1f0ec; --surface: #fbfaf7; --surface2: #ecebe5; --line: #cfcdc4; --grid: #e2e0d8;
-  --fg: #151512; --mute: #5f5f57; --accent: #d4550a; --accent-ink: #ffffff;
-  --ok: #1d7f4a; --warn: #a85f00; --bad: #c4301f; --cut: #c4301f; --hole: #d62828; --wire: #1d63c4;
-  --letter-o: #7aaedb; --letter-c: #f4f1e4; --rib: #12805a; --base: #a9a79c;
+  --bg: #f4f5fa; --surface: #ffffff; --surface2: #f7f8fc; --surface3: #eef0f6;
+  --line: #e6e8f0; --line2: #d9dce7;
+  --fg: #1d2033; --fg2: #474b60; --mute: #7d8196;
+  --accent: #4f46e5; --accent2: #6d64f0; --accent-ink: #ffffff; --accent-soft: #eef0ff; --accent-line: #c9c6fb;
+  --ok: #18945a; --okbg: #e7f7ee; --okline: #bfe8d0;
+  --warn: #b26a00; --warnbg: #fff5e3; --warnline: #f6dcaa;
+  --bad: #d23a3a; --badbg: #fdeeee; --badline: #f5c6c6;
+  --info: #2563eb; --infobg: #eef5ff; --infoline: #cfe0fb;
+  /* boje pregleda (SVG) */
+  --letter-o: #cfcdf9; --letter-line: #6d64f0; --letter-c: #ffffff; --rib: #18945a; --base: #b9bccb;
+  --hole: #d23a3a; --wire: #2563eb; --cut: #d23a3a;
+  --r: 18px; --r2: 10px;
+  --shadow: 0 1px 2px rgba(20, 24, 50, .04), 0 6px 24px -12px rgba(20, 24, 50, .12);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { height: auto; }
-body {
-  background: var(--bg); color: var(--fg); font-family: var(--font-mono); font-size: 14px; line-height: 1.5;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 18px 40px;
-  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 32px 32px; background-attachment: fixed;
-}
-.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.logo { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .02em; }
-.logo b { color: var(--accent); font-weight: 800; }
-header .sub { color: var(--mute); font-size: 12px; text-transform: uppercase; letter-spacing: .14em; }
-.cols { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
-.panel { background: var(--surface); border: 1px solid var(--line); }
-.steps { display: flex; flex-direction: column; gap: 0; }
-.step { padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
-.step:last-child { border-bottom: 0; }
-.step h2 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; display: flex; gap: 10px; align-items: center; }
-.step h2 i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--accent-ink); background: var(--accent); padding: 1px 7px; }
-label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); min-width: 0; }
-input[type=text], input[type=number] {
-  background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 0; padding: 9px 10px;
-  font: inherit; min-width: 0; width: 100%;
-}
-input[type=text]#ime { font-family: var(--font-display); font-weight: 800; font-size: 28px; padding: 8px 12px; letter-spacing: .01em; }
-input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); }
-.seg button { background: transparent; color: var(--mute); border: 0; border-right: 1px solid var(--line); padding: 9px 8px; font: inherit; font-size: 12px; cursor: pointer; }
-.seg button:last-child { border-right: 0; }
-.seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+p { margin: 0; }
+h1, h2 { margin: 0; }
+
+/* ---- okvir aplikacije ---- */
+.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 12px; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -.01em; padding: 0 8px; white-space: nowrap; }
+.brand .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--accent2), var(--accent)); box-shadow: 0 4px 12px -4px rgba(79, 70, 229, .6); flex: none; }
+.ws { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); min-width: 0; }
+.ws span { font-size: 11px; color: var(--mute); }
+.ws b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; text-decoration: none; color: var(--fg2); font-weight: 500; font-size: 14px; transition: background .12s, color .12s; }
+.nav a:hover { background: var(--surface2); color: var(--fg); }
+.nav a.on { background: var(--accent-soft); color: var(--accent); }
+.ic { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; flex: none; }
+.ic svg { width: 14px; height: 14px; }
+.ic.c1 { background: #e8f0ff; color: #2f6fe4; } .ic.c2 { background: #f1ebff; color: #7b4fe0; } .ic.c3 { background: #e7f7ee; color: #18945a; } .ic.c4 { background: #fff1e6; color: #e06b1f; }
+
+.main { min-width: 0; padding: 22px 26px 60px; display: flex; flex-direction: column; gap: 16px; }
+.banner { display: flex; gap: 12px; align-items: flex-start; background: var(--infobg); border: 1px solid var(--infoline); border-radius: 14px; padding: 12px 16px; color: #23407a; }
+.banner p { font-size: 14px; }
+.banner b { color: #1c3a8a; }
+.bi { flex: none; width: 20px; height: 20px; border-radius: 6px; background: var(--info); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 700; margin-top: 1px; }
+
+/* dve kolone na velikom ekranu: podešavanja levo, pregled i rezultat desno */
+.layout { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.col-set { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.col-view { display: flex; flex-direction: column; gap: 16px; min-width: 0; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; overscroll-behavior: contain; padding: 2px; margin: -2px; }
+
+/* ---- kartice ---- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); scroll-margin-top: 16px; min-width: 0; }
+.card-h { display: flex; align-items: center; gap: 12px; padding: 16px 20px; flex-wrap: wrap; cursor: pointer; user-select: none; }
+.lbl { font-size: 16px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
+.lbl .n { width: 24px; height: 24px; border-radius: 7px; display: inline-grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; flex: none; }
+.card-sum { flex: 1; min-width: 0; font-size: 13px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; opacity: 0; transition: opacity .15s; }
+.sec.shut .card-sum { opacity: 1; }
+.chev { order: 10; flex: none; margin-left: auto; width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line2); background: var(--surface); display: grid; place-items: center; transition: background .12s; padding: 0; }
+.chev::before { content: ''; width: 8px; height: 8px; border-right: 1.8px solid var(--fg2); border-bottom: 1.8px solid var(--fg2); transform: translateY(2px) rotate(-135deg); transition: transform .2s; }
+.chev:hover { background: var(--surface2); }
+.sec.shut .chev::before { transform: translateY(-2px) rotate(45deg); }
+.card-sum + .chev { margin-left: 0; }
+.card-b { display: flex; flex-direction: column; gap: 14px; padding: 0 20px 20px; }
+.sec.shut .card-b { display: none; }
+.hint { font-size: 12px; color: var(--mute); }
+.sec.shut .card-h .tabs, .sec.shut .card-h .opts { display: none !important; }
+
+/* ---- dugmad ---- */
+.btn { background: var(--accent); color: #fff; border: 0; border-radius: 12px; padding: 13px 22px; font-weight: 600; font-size: 15px; transition: background .12s, transform .1s, box-shadow .15s; box-shadow: 0 6px 18px -8px rgba(79, 70, 229, .7); }
+.btn:hover:not(:disabled) { background: #4338ca; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.btn-ghost { background: var(--surface); border: 1px solid var(--line2); color: var(--fg2); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 500; transition: background .12s, border-color .12s, color .12s; align-self: flex-start; }
+.btn-ghost:hover { background: var(--surface2); color: var(--fg); }
+.btn-ghost.danger { color: var(--bad); border-color: var(--badline); }
+.btn-ghost.danger:hover { background: var(--badbg); }
+
+/* segmentirani izbor i tabovi */
+.seg, .tabs { display: flex; background: var(--surface3); border-radius: 11px; padding: 3px; gap: 2px; }
+.seg button, .tabs button { flex: 1; background: transparent; border: 0; border-radius: 8px; color: var(--fg2); padding: 8px 12px; font-size: 13px; font-weight: 500; transition: background .12s, color .12s, box-shadow .12s; }
+.seg button:hover:not(:disabled):not([aria-pressed=true]), .tabs button:hover:not([aria-selected=true]) { color: var(--fg); }
+.seg button[aria-pressed=true], .tabs button[aria-selected=true] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px rgba(20, 24, 50, .08), 0 2px 8px -2px rgba(20, 24, 50, .1); }
 .seg button:disabled { opacity: .4; cursor: not-allowed; }
-.hint { font-size: 12px; color: var(--mute); margin: 0; }
-.fonts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.fonts button { background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 8px 10px; text-align: left; cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 0; }
-.fonts button .n { font-weight: 700; font-size: 13px; }
-.fonts button .d { color: var(--mute); font-size: 11px; }
-.fonts button[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.sl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
-.sl .l { font-size: 12px; color: var(--mute); }
-.sl output { font-weight: 700; font-size: 13px; text-align: right; min-width: 64px; }
+.tabs button { flex: none; padding: 7px 16px; }
+
+/* polja */
+input[type=text], input[type=number] { width: 100%; min-width: 0; background: var(--surface); border: 1px solid var(--line2); border-radius: var(--r2); padding: 9px 12px; font-size: 14px; font-weight: 600; color: var(--fg); transition: border-color .12s, box-shadow .12s; -moz-appearance: textfield; appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=text]:hover, input[type=number]:hover { border-color: #c3c7d6; }
+input[type=text]:focus, input[type=number]:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input[type=text]#ime { font-size: 22px; font-weight: 700; padding: 11px 14px; letter-spacing: -.01em; }
+label.f { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 500; color: var(--mute); min-width: 0; }
+
+/* prekidač */
+.chk { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--fg2); cursor: pointer; user-select: none; }
+.chk input { appearance: none; -webkit-appearance: none; flex: none; width: 36px; height: 20px; margin: 0; border-radius: 20px; background: #d6d9e4; position: relative; cursor: pointer; transition: background .15s; }
+.chk input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .15s; }
+.chk input:checked { background: var(--accent); }
+.chk input:checked::after { transform: translateX(16px); }
+
+/* fontovi */
+.fonts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fonts button { background: var(--surface); color: var(--fg); border: 1px solid var(--line2); border-radius: 12px; padding: 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 1px; transition: border-color .12s, background .12s; }
+.fonts button:hover { background: var(--surface2); }
+.fonts button .n { font-weight: 600; font-size: 14px; }
+.fonts button .d { color: var(--mute); font-size: 12px; }
+.fonts button[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); }
+
+/* slajderi */
+.sl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.sl .l { font-size: 12px; color: var(--mute); font-weight: 500; }
+.sl output { font-weight: 600; font-size: 13px; text-align: right; min-width: 64px; }
 .sl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 2px 0 6px; }
-details.adv { border: 1px solid var(--line); }
-details.adv summary { cursor: pointer; padding: 9px 10px; font-size: 12px; color: var(--mute); text-transform: uppercase; letter-spacing: .1em; }
-details.adv .grid { padding: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); }
-.view { display: flex; flex-direction: column; min-width: 0; position: sticky; top: env(safe-area-inset-top, 0px); }
-.tabs { display: flex; border-bottom: 1px solid var(--line); align-items: stretch; flex-wrap: wrap; }
-.tabs button { background: transparent; color: var(--mute); border: 0; border-right: 1px solid var(--line); padding: 10px 16px; font: inherit; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
-.tabs button[aria-selected=true] { color: var(--accent-ink); background: var(--accent); font-weight: 700; }
-.tabs .opts { margin-left: auto; display: flex; gap: 14px; align-items: center; padding: 0 12px; font-size: 12px; color: var(--mute); }
-.tabs .opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
-.stage { position: relative; height: min(62vh, 640px); min-height: 320px; overflow: hidden; }
-#v2d, #v3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-#v3d { touch-action: none; }
-.badge { position: absolute; left: 10px; top: 10px; background: var(--surface); border: 1px solid var(--line); padding: 5px 10px; font-size: 12px; display: flex; gap: 8px; align-items: center; z-index: 2; }
-.badge .dot { width: 8px; height: 8px; background: var(--accent); }
-.badge.busy .dot { animation: pulse 0.9s steps(2) infinite; }
-@keyframes pulse { 50% { opacity: .15; } }
+#sliders { display: flex; flex-direction: column; gap: 4px; }
+
+/* sklopivi blokovi */
+.fold { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.fold summary { list-style: none; cursor: pointer; padding: 11px 14px; font-size: 14px; font-weight: 500; color: var(--fg2); display: flex; justify-content: space-between; align-items: center; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: ''; width: 8px; height: 8px; border-right: 1.6px solid var(--mute); border-bottom: 1.6px solid var(--mute); transform: rotate(45deg); transition: transform .15s; margin-right: 4px; }
+.fold[open] summary::after { transform: rotate(-135deg); }
+.fold-b { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.howto { margin: 0; padding-left: 20px; color: var(--fg2); display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+
+/* ---- pregled ---- */
+.plan-h { padding-bottom: 12px; }
+.plan-h .card-sum { order: 5; }
+.opts { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+.plan-h .opts { order: 6; margin-left: 0; }
+.stage { position: relative; height: min(56vh, 560px); min-height: 300px; overflow: hidden; background-color: var(--surface2);
+  background-image: radial-gradient(#dde0ea 1px, transparent 1px); background-size: 18px 18px; border-top: 1px solid var(--line); }
 .stage.dim svg, .stage.dim canvas { opacity: .45; }
-.err { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; background: var(--surface); border: 1px solid var(--bad); color: var(--bad); padding: 10px 12px; font-size: 13px; }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--mute); }
+#v2d, #v3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#v2d { user-select: none; -webkit-user-select: none; }
+#v2d text { font-family: var(--font); font-weight: 500; }
+#v3d { touch-action: none; }
+.badge { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 7px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 500; color: var(--fg2); box-shadow: var(--shadow); }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.badge.busy .dot { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .2; } }
+.err { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 2; background: var(--badbg); border: 1px solid var(--badline); border-radius: 12px; color: var(--bad); padding: 10px 12px; font-size: 13px; }
+.legend { display: flex; gap: 8px 16px; flex-wrap: wrap; padding: 12px 20px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--mute); }
 .legend span { display: inline-flex; gap: 6px; align-items: center; }
-.legend i { width: 10px; height: 10px; display: inline-block; }
-.result { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-.result h2 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.parts { width: 100%; border-collapse: collapse; font-size: 13px; }
-.parts th { text-align: left; color: var(--mute); font-weight: 400; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; padding: 4px 8px 6px 0; }
-.parts td { padding: 6px 8px 6px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.legend i { width: 10px; height: 10px; display: inline-block; border-radius: 3px; border: 1px solid var(--line2); }
+.sec-pregled .card-b { padding: 0; gap: 0; }
+
+/* ---- rezultat ---- */
+.sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.sum div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sum b { font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+.sum span { font-size: 12px; color: var(--mute); }
+#notes { display: flex; flex-direction: column; gap: 8px; }
+#notes .note { border-radius: 12px; padding: 10px 14px; font-size: 13px; background: var(--surface2); border: 1px solid var(--line); color: var(--fg); }
+#notes .note.warn { background: var(--warnbg); border-color: var(--warnline); color: #7a4a00; }
+#notes .note.bad { background: var(--badbg); border-color: var(--badline); color: #8f2323; }
+#notes .note.ok { background: var(--okbg); border-color: var(--okline); color: var(--ok); font-weight: 500; }
 .tw { overflow-x: auto; }
-.tag { display: inline-block; padding: 0 6px; font-size: 11px; border: 1px solid var(--line); color: var(--mute); }
-.tag.sock { color: var(--hole); border-color: var(--hole); }
-.tag.ok { color: var(--ok); border-color: var(--ok); }
-.tag.warn { color: var(--warn); border-color: var(--warn); }
-.sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-.sum div { border: 1px solid var(--line); padding: 8px 10px; display: flex; flex-direction: column; }
-.sum b { font-family: var(--font-display); font-size: 20px; font-weight: 800; }
-.sum span { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .08em; }
-.btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.btn { background: var(--accent); color: var(--accent-ink); border: 0; padding: 12px 20px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: .08em; }
-.btn:disabled { opacity: .35; cursor: not-allowed; }
-.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
-.note { font-size: 12px; color: var(--mute); }
-.note.warn { color: var(--warn); }
-.msg { min-height: 1.4em; font-size: 12px; color: var(--mute); }
-@media (max-width: 860px) {
-  .cols { grid-template-columns: minmax(0, 1fr); }
-  .view { position: static; order: -1; }
-  .stage { height: 52vh; min-height: 280px; }
-  input[type=text]#ime { font-size: 24px; }
+.parts { width: 100%; border-collapse: collapse; font-size: 13px; }
+.parts th { text-align: left; color: var(--mute); font-weight: 500; font-size: 12px; padding: 4px 10px 8px 0; white-space: nowrap; }
+.parts td { padding: 8px 10px 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.tag { display: inline-block; padding: 1px 8px; font-size: 11px; font-weight: 500; border-radius: 999px; background: var(--surface3); color: var(--fg2); }
+.tag.sock { background: var(--badbg); color: var(--bad); }
+.tag.ok { background: var(--accent-soft); color: var(--accent); }
+.tag.warn { background: var(--warnbg); color: var(--warn); }
+.dlbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dlbar .btn { min-width: 260px; }
+.msg { font-size: 13px; color: var(--mute); }
+
+/* ---- manji ekrani ---- */
+@media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); } }
+@media (max-width: 960px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); gap: 10px; }
+  .ws { display: none; }
+  .nav { flex-direction: row; margin-left: auto; gap: 2px; overflow-x: auto; }
+  .nav a { padding: 6px 8px; font-size: 13px; white-space: nowrap; }
+  .nav a .ic { display: none; }
+  .main { padding: 14px 14px 40px; }
+  .card { scroll-margin-top: 70px; }
+  /* jedna kolona: ime, pregled, font, štampa, rezultat */
+  .layout { display: flex; flex-direction: column; }
+  .col-set, .col-view { display: contents; position: static; max-height: none; overflow: visible; padding: 0; margin: 0; }
+  #sec-ime { order: 1; } #sec-pregled { order: 2; } #sec-font { order: 3; } #sec-stampa { order: 4; } #sec-rezultat { order: 5; }
+  .stage { height: 52vh; min-height: 260px; }
+  .sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (prefers-reduced-motion: reduce) { .badge.busy .dot { animation: none; } }
+@media (max-width: 560px) {
+  .brand { font-size: 15px; padding: 0; } .brand .mark { width: 26px; height: 26px; }
+  .banner { padding: 10px 12px; } .banner p { font-size: 13px; }
+  .card-h { padding-left: 16px; padding-right: 12px; }
+  .card-b { padding: 0 16px 16px; }
+  .sec-pregled .card-b { padding: 0; }
+  .legend { padding: 12px 16px 14px; }
+  .card-sum { display: none; }
+  .sec.shut .card-sum { display: block; flex-basis: 100%; order: 20; margin: -6px 0 0 34px; text-align: left; }
+  .grid { grid-template-columns: 1fr; }
+  .fonts { grid-template-columns: 1fr 1fr; }
+  .dlbar { position: sticky; bottom: 10px; z-index: 5; }
+  .dlbar .btn { width: 100%; min-width: 0; }
+  .plan-h { gap: 8px; }
+  .plan-h .opts { order: 20; flex-basis: 100%; justify-content: flex-start; }
+  .card-h .chev { margin-left: auto !important; }
+  .plan-h .lbl { font-size: 15px; }
+  .plan-h .tabs button { padding: 7px 9px; font-size: 12px; }
+  .stage { height: 44vh; min-height: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
+<div class="app">
 
-<div class="wrap">
-  <header>
-    <div class="logo">MALA <b>3D</b> FABRIKA</div>
-    <div class="sub">Generator LED slova-lampi · STL za Bambu Lab</div>
-  </header>
-
-  <div class="cols">
-    <div class="panel steps">
-      <section class="step">
-        <h2><i>1</i> Ime ili slovo</h2>
-        <input type="text" id="ime" value="Irina" maxlength="24" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Ime ili slovo">
-        <div class="seg" id="nacin" role="group" aria-label="Način">
-          <button type="button" data-v="spojeno" aria-pressed="true">Spojeno rukopisno</button>
-          <button type="button" data-v="posebno" aria-pressed="false">Svako slovo posebno</button>
-        </div>
-        <p class="hint" id="nacin-hint">Slova se dodiruju kao u pisanom imenu. Jedna traka, jedna utičnica, delovi se lepe.</p>
-      </section>
-
-      <section class="step">
-        <h2><i>2</i> Font</h2>
-        <div class="fonts" id="fonts"></div>
-      </section>
-
-      <section class="step">
-        <h2><i>3</i> Štampa</h2>
-        <div class="seg" id="preset" role="group" aria-label="Varijanta">
-          <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
-          <button type="button" data-v="laka" aria-pressed="false">Laka i brza</button>
-        </div>
-        <p class="hint" id="preset-hint"></p>
-        <div id="sliders"></div>
-        <details class="adv">
-          <summary>Napredna podešavanja</summary>
-          <div class="grid" id="adv"></div>
-        </details>
-        <button type="button" class="btn ghost" id="reset">Vrati početne mere</button>
-      </section>
+  <aside class="side">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></span>
+      <span>Slova lampe</span>
     </div>
+    <div class="ws"><span>Projekat</span><b id="ws-name">Irina</b></div>
+    <nav class="nav" aria-label="Sekcije">
+      <a href="#sec-ime" data-go="sec-ime"><i class="ic c1">A</i>Slovo</a>
+      <a href="#sec-font" data-go="sec-font"><i class="ic c2">Aa</i>Font</a>
+      <a href="#sec-stampa" data-go="sec-stampa"><i class="ic c3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></i>Štampa</a>
+      <a href="#sec-rezultat" data-go="sec-rezultat"><i class="ic c4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></i>Preuzmi</a>
+    </nav>
+  </aside>
 
-    <div class="view">
-      <div class="panel">
-        <div class="tabs" role="tablist">
-          <button type="button" role="tab" id="tab2d" aria-selected="true">2D pregled</button>
-          <button type="button" role="tab" id="tab3d" aria-selected="false">3D model</button>
-          <div class="opts" id="opts3d" hidden>
-            <label><input type="checkbox" id="o-dif" checked> Difuzor</label>
-            <label><input type="checkbox" id="o-pos" checked> Postolje</label>
+  <main class="main">
+    <div class="banner"><span class="bi" aria-hidden="true">i</span><p><b>Kako radi:</b> upiši ime, izaberi font, pa preuzmi fajlove za štampu.</p></div>
+
+    <div class="layout">
+      <div class="col-set">
+
+        <section class="card sec" id="sec-ime" data-sec="ime">
+          <div class="card-h"><h2 class="lbl"><span class="n">1</span>Ime ili slovo</h2><span class="card-sum" id="sum-ime"></span><button type="button" class="chev" aria-label="Skupi ili raširi" aria-expanded="true"></button></div>
+          <div class="card-b">
+            <input type="text" id="ime" value="Irina" maxlength="24" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Ime ili slovo">
+            <div class="seg" id="nacin" role="group" aria-label="Način">
+              <button type="button" data-v="spojeno" aria-pressed="true">Spojeno rukopisno</button>
+              <button type="button" data-v="posebno" aria-pressed="false">Svako slovo posebno</button>
+            </div>
+            <p class="hint" id="nacin-hint">Slova se dodiruju kao u pisanom imenu. Jedna traka, jedna utičnica, delovi se lepe.</p>
           </div>
-        </div>
-        <div class="stage" id="stage">
-          <div class="badge busy" id="badge"><span class="dot"></span><span id="badge-t">Učitavam generator…</span></div>
-          <svg id="v2d" role="img" aria-label="Pogled spreda" xmlns="http://www.w3.org/2000/svg"></svg>
-          <canvas id="v3d" hidden></canvas>
-          <div class="err" id="err" hidden></div>
-        </div>
-        <div class="legend" id="legend">
-          <span><i style="background:var(--letter-c)"></i> kanal za traku</span>
-          <span><i style="background:var(--letter-o)"></i> zid</span>
-          <span><i style="background:var(--rib)"></i> zubi difuzora</span>
-          <span><i style="background:var(--hole);border-radius:50%"></i> utičnica</span>
-          <span><i style="background:var(--wire);border-radius:50%"></i> izlaz žice</span>
-          <span><i style="border-left:2px dashed var(--cut)"></i> mesto spajanja</span>
-        </div>
+        </section>
+
+        <section class="card sec" id="sec-font" data-sec="font">
+          <div class="card-h"><h2 class="lbl"><span class="n">2</span>Font</h2><span class="card-sum" id="sum-font"></span><button type="button" class="chev" aria-label="Skupi ili raširi" aria-expanded="true"></button></div>
+          <div class="card-b">
+            <div class="fonts" id="fonts"></div>
+          </div>
+        </section>
+
+        <section class="card sec" id="sec-stampa" data-sec="stampa">
+          <div class="card-h"><h2 class="lbl"><span class="n">3</span>Štampa</h2><span class="card-sum" id="sum-stampa"></span><button type="button" class="chev" aria-label="Skupi ili raširi" aria-expanded="true"></button></div>
+          <div class="card-b">
+            <div class="seg" id="preset" role="group" aria-label="Varijanta">
+              <button type="button" data-v="jaka" aria-pressed="true">Jaka</button>
+              <button type="button" data-v="laka" aria-pressed="false">Laka i brza</button>
+            </div>
+            <p class="hint" id="preset-hint"></p>
+            <div id="sliders"></div>
+            <details class="fold">
+              <summary>Za iskusne</summary>
+              <div class="fold-b"><div class="grid" id="adv"></div></div>
+            </details>
+            <button type="button" class="btn-ghost danger" id="reset">Vrati početne mere</button>
+          </div>
+        </section>
+
       </div>
 
-      <div class="panel result" id="result">
-        <h2>Rezultat</h2>
-        <div class="sum" id="sum"></div>
-        <div class="tw"><table class="parts" id="parts"></table></div>
-        <div id="notes"></div>
-        <div class="btnrow">
-          <button type="button" class="btn" id="dl" disabled>Preuzmi STL (ZIP)</button>
-          <span class="msg" id="dlmsg"></span>
-        </div>
-        <p class="note">Telo štampaj na leđima, otvorom nagore, bez podupirača. Difuzor spoljnom stranom na teksturisanu PEI ploču. Postolje ravno. Delove istog imena lepi po ravnoj ivici.</p>
+      <div class="col-view">
+
+        <section class="card sec sec-pregled" id="sec-pregled" data-sec="pregled">
+          <div class="card-h plan-h">
+            <h2 class="lbl"><span class="n">4</span>Pregled</h2>
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" id="tab2d" aria-selected="true">2D pregled</button>
+              <button type="button" role="tab" id="tab3d" aria-selected="false">3D model</button>
+            </div>
+            <div class="opts" id="opts3d" hidden>
+              <label class="chk"><input type="checkbox" id="o-dif" checked> Difuzor</label>
+              <label class="chk"><input type="checkbox" id="o-pos" checked> Postolje</label>
+            </div>
+            <span class="card-sum" id="sum-pregled"></span>
+            <button type="button" class="chev" aria-label="Skupi ili raširi" aria-expanded="true"></button>
+          </div>
+          <div class="card-b">
+            <div class="stage" id="stage">
+              <div class="badge busy" id="badge"><span class="dot"></span><span id="badge-t">Učitavam generator…</span></div>
+              <svg id="v2d" role="img" aria-label="Pogled spreda" xmlns="http://www.w3.org/2000/svg"></svg>
+              <canvas id="v3d" hidden></canvas>
+              <div class="err" id="err" hidden></div>
+            </div>
+            <div class="legend" id="legend">
+              <span><i style="background:var(--letter-c)"></i> kanal za traku</span>
+              <span><i style="background:var(--letter-o)"></i> zid</span>
+              <span><i style="background:var(--rib)"></i> zubi difuzora</span>
+              <span><i style="background:var(--hole);border-radius:50%"></i> utičnica</span>
+              <span><i style="background:var(--wire);border-radius:50%"></i> izlaz žice</span>
+              <span><i style="border:0;border-left:2px dashed var(--cut);border-radius:0;width:2px"></i> mesto spajanja</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card sec result" id="sec-rezultat" data-sec="rezultat">
+          <div class="card-h"><h2 class="lbl"><span class="n">5</span>Rezultat</h2><span class="card-sum" id="sum-rezultat"></span><button type="button" class="chev" aria-label="Skupi ili raširi" aria-expanded="true"></button></div>
+          <div class="card-b" id="result">
+            <div class="sum" id="sum"></div>
+            <div id="notes"></div>
+            <details class="fold">
+              <summary>Spisak delova</summary>
+              <div class="fold-b"><div class="tw"><table class="parts" id="parts"></table></div></div>
+            </details>
+            <details class="fold">
+              <summary>Kako da štampam?</summary>
+              <div class="fold-b">
+                <ul class="howto">
+                  <li>Telo štampaj na leđima, otvorom nagore, bez podupirača.</li>
+                  <li>Difuzor štampaj spoljnom stranom na teksturisanu PEI ploču.</li>
+                  <li>Postolje štampaj ravno.</li>
+                  <li>Delove istog imena lepi po ravnoj ivici.</li>
+                </ul>
+              </div>
+            </details>
+            <div class="dlbar">
+              <button type="button" class="btn" id="dl" disabled>Preuzmi STL (ZIP)</button>
+              <span class="msg" id="dlmsg"></span>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
-  </div>
+  </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -304,6 +444,7 @@ function syncUI() {
   for (const s of SLIDERI) { $('r-' + s.k).value = state.params[s.k]; $('o-' + s.k).textContent = state.params[s.k] + ' ' + s.u; }
   for (const [k] of NAPREDNO) $('n-' + k).value = state.params[k];
   syncPreset();
+  updateChrome();
 }
 document.querySelectorAll('#preset button').forEach((b) => b.addEventListener('click', () => {
   Object.assign(state.params, b.dataset.v === 'laka' ? LAGANO : { zid_bocni: DEFAULTS.zid_bocni, dubina: DEFAULTS.dubina, postolje_visina: DEFAULTS.postolje_visina, postolje_dubina: DEFAULTS.postolje_dubina, postolje_ivica: DEFAULTS.postolje_ivica });
@@ -356,7 +497,7 @@ function schedule() {
   badge('Čekam izmene…', true);
   tm = setTimeout(run, 650);
 }
-function badge(t, b) { $('badge-t').textContent = t; $('badge').classList.toggle('busy', !!b); }
+function badge(t, b) { $('badge-t').textContent = t; $('badge').classList.toggle('busy', !!b); const sp = $('sum-pregled'); if (sp) sp.textContent = t; }
 function showErr(msg) { const e = $('err'); e.hidden = !msg; e.textContent = msg || ''; }
 async function run() {
   if (busy) { again = true; return; }
@@ -374,7 +515,7 @@ async function run() {
   } catch (e) {
     if (again) { busy = false; again = false; return run(); }
     showErr(e.nep ? e.message : 'Greška pri izradi: ' + e.message);
-    badge('Nije moguće', false);
+    badge('Nije moguće', false); setSum('rezultat', 'Nije moguće');
   }
   busy = false;
   $('stage').classList.remove('dim');
@@ -412,7 +553,7 @@ function draw2d() {
       s += `<line x1="${mx.toFixed(2)}" x2="${mx.toFixed(2)}" y1="${(r.T - r.baseH).toFixed(2)}" y2="${r.T.toFixed(2)}" stroke="var(--base)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
     for (const d of r.delovi) {
-      s += `<path d="${pathOf(d.O)}" fill="var(--letter-o)" fill-rule="evenodd" stroke="var(--fg)" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+      s += `<path d="${pathOf(d.O)}" fill="var(--letter-o)" fill-rule="evenodd" stroke="var(--letter-line)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
       s += `<path d="${pathOf(d.C)}" fill="var(--letter-c)" fill-rule="evenodd"/>`;
       if (d.zubi.length) s += `<path d="${pathOf(d.zubi)}" fill="var(--rib)" fill-rule="evenodd"/>`;
       if (d.rupa) {
@@ -429,7 +570,7 @@ function draw2d() {
   R.res.forEach((r, i) => {
     for (const d of r.delovi) {
       const x = (d.xl + d.xr) / 2 + off[i];
-      s += `<text x="${x.toFixed(2)}" y="${(-(r.a.visina + 8)).toFixed(2)}" text-anchor="middle" font-size="${Math.max(5, (maxX - minX) / 55).toFixed(2)}" fill="var(--mute)" font-family="Space Mono, monospace">deo ${d.br}${R.res.length > 1 && R.mode === 'posebno' ? ' · ' + r.tekst : ''}</text>`;
+      s += `<text x="${x.toFixed(2)}" y="${(-(r.a.visina + 8)).toFixed(2)}" text-anchor="middle" font-size="${Math.max(5, (maxX - minX) / 55).toFixed(2)}" fill="var(--mute)" font-family="Inter, system-ui, sans-serif">deo ${d.br}${R.res.length > 1 && R.mode === 'posebno' ? ' · ' + r.tekst : ''}</text>`;
     }
   });
   svg.innerHTML = s;
@@ -447,9 +588,9 @@ function init3d() {
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 6000);
   const controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = false;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 0.9));
-  const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(-200, 400, 600); scene.add(dl);
-  const dl2 = new THREE.DirectionalLight(0xffffff, 0.35); dl2.position.set(300, -100, -300); scene.add(dl2);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a8, 1.0));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.5); dl.position.set(-200, 400, 600); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.2); dl2.position.set(300, -100, -300); scene.add(dl2);
   const group = new THREE.Group(); scene.add(group);
   const draw = () => renderer.render(scene, camera);
   controls.addEventListener('change', draw);
@@ -461,7 +602,7 @@ function init3d() {
   new ResizeObserver(resize).observe($('stage'));
   three = { renderer, scene, camera, controls, group, draw, resize, fitted: false };
 }
-const TINTS = [0x8ec5f0, 0xf4a7c3, 0x8ec5f0, 0xf4a7c3];
+const TINTS = [0x7db1ea, 0xee8db4, 0x7db1ea, 0xee8db4];
 function toGeo(m) {
   const n = m.v.length / m.np, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { pos[3 * i] = m.v[i * m.np]; pos[3 * i + 1] = m.v[i * m.np + 1]; pos[3 * i + 2] = m.v[i * m.np + 2]; }
@@ -477,8 +618,8 @@ function build3d() {
   while (group.children.length) { const c = group.children.pop(); c.geometry && c.geometry.dispose(); }
   const off = layout(state.result.res);
   const mTelo = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ color: TINTS[i], roughness: 0.55, metalness: 0.05 }));
-  const mDif = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, transparent: true, opacity: 0.35, depthWrite: false });
-  const mPos = new THREE.MeshStandardMaterial({ color: 0x77766e, roughness: 0.7 });
+  const mDif = new THREE.MeshStandardMaterial({ color: 0xc9d4ff, roughness: 0.3, transparent: true, opacity: 0.45, depthWrite: false });
+  const mPos = new THREE.MeshStandardMaterial({ color: 0x9aa0b8, roughness: 0.7 });
   const box = new THREE.Box3();
   state.result.res.forEach((r, ri) => {
     r.delovi.forEach((d, di) => {
@@ -555,7 +696,8 @@ function show() {
     <div><b>≈ ${Math.round(gr / 10) * 10} g</b><span>procena mase (postolje 10% ispune)</span></div>
     <div><b>${first.T !== undefined ? fmt(first.baseH) : ''} mm</b><span>visina postolja</span></div>`;
   $('parts').innerHTML = `<thead><tr><th>Deo</th><th>Slova</th><th>Telo</th><th>Postolje</th><th></th></tr></thead><tbody>${rows.join('')}</tbody>`;
-  $('notes').innerHTML = notes.map((n) => `<p class="note warn">${n}</p>`).join('');
+  $('notes').innerHTML = notes.length ? notes.map((n) => `<p class="note warn">${n}</p>`).join('') : '<p class="note ok">Svi delovi staju na sto i ne preklapaju se.</p>';
+  setSum('rezultat', notes.length ? `${notes.length} ${notes.length === 1 ? 'problem' : 'problema'}` : 'Spremno za preuzimanje');
   $('dl').disabled = false;
 }
 
@@ -602,6 +744,48 @@ $('dl').addEventListener('click', async () => {
   }
   $('dl').disabled = false;
 });
+
+// ------------------------------------------------------------------ okvir: meni, sklopive kartice, sažetci
+const UIKEY = 'slova-ui-v1';
+let ui = { shut: {} };
+try { const u = JSON.parse(localStorage.getItem(UIKEY) || 'null'); if (u && u.shut) ui = u; } catch (e) {}
+function saveUI() { try { localStorage.setItem(UIKEY, JSON.stringify(ui)); } catch (e) {} }
+function setSum(id, t) { const el = $('sum-' + id); if (el) el.textContent = t; }
+function setShut(sec, shut) {
+  sec.classList.toggle('shut', shut);
+  const c = sec.querySelector('.chev'); if (c) c.setAttribute('aria-expanded', String(!shut));
+  ui.shut[sec.dataset.sec] = shut; saveUI();
+}
+function updateChrome() {
+  const t = state.tekst.trim(), n = [...t.replace(/\s/g, '')].length;
+  $('ws-name').textContent = t || '—';
+  setSum('ime', t ? `${t.toUpperCase()} · ${n} ${n === 1 ? 'slovo' : 'slova'}` : 'Nije uneto');
+  setSum('font', 'Font: ' + FONTOVI[state.font][0]);
+  const p = presetOf();
+  setSum('stampa', `${p === 'laka' ? 'Lagano' : p === 'jaka' ? 'Čvrsto' : 'Prilagođeno'} · zid ${fmt(state.params.zid_bocni)} mm`);
+}
+document.querySelectorAll('.sec').forEach((sec) => {
+  setShut(sec, !!ui.shut[sec.dataset.sec]);
+  const h = sec.querySelector('.card-h');
+  h.addEventListener('click', (e) => {
+    if (e.target.closest('.chev') || !e.target.closest('button, input, label, select, a, .tabs, .opts')) setShut(sec, !sec.classList.contains('shut'));
+  });
+});
+const navLinks = [...document.querySelectorAll('.nav a')];
+navLinks.forEach((a) => a.addEventListener('click', (e) => {
+  e.preventDefault();
+  const sec = $(a.dataset.go); setShut(sec, false);
+  sec.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}));
+if ('IntersectionObserver' in window) {
+  const vis = new Map();
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => vis.set(e.target.id, e.isIntersecting));
+    const first = navLinks.find((a) => vis.get(a.dataset.go));
+    if (first) navLinks.forEach((a) => a.classList.toggle('on', a === first));
+  }, { rootMargin: '-20% 0px -55% 0px' });
+  navLinks.forEach((a) => io.observe($(a.dataset.go)));
+}
 
 syncUI();
 badge('Učitavam generator…', true);
